@@ -2,35 +2,37 @@
 # ConfigMgr Client Region
 ##################################################################################################################################
 
+<#
+.SYNOPSIS
+    Invoke a Hardware Inventory from the SCCM/MEMCM Client on the machine
+
+.DESCRIPTION
+    Invoke a Hardware Inventory from the SCCM/MEMCM Client on the machine. A Full or delta can be performed.
+
+.PARAMETER Full
+If specified will force remove any Hardware Inventory Data on the machine and re run.
+
+.EXAMPLE
+    PS C:\> Invoke-OGHWInventory
+    Runs a delta HW Inventory ontop of what is currently available in WMI.
+
+.EXAMPLE
+    PS C:\> Invoke-OGHWInventory -Full
+    Clears current HW Inventory WMI and re runs.
+
+.NOTES
+    Name:        Invoke-HWInventory       
+    Author:      Richie Schuster - SCCMOG.com
+    Website:     https://www.sccmog.com
+    GitHub:      https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Contact:     @RichieJSY
+    Created:     2020-30-07
+    Updated:     -
+    
+    Version history:
+    1.0.0 - (2020-30-07) Function created
+#>
 function Invoke-OGHWInventory {
-    <#
-    .SYNOPSIS
-        Invoke a Hardware Inventory from the SCCM/MEMCM Client on the machine
-
-    .DESCRIPTION
-        Invoke a Hardware Inventory from the SCCM/MEMCM Client on the machine. A Full or delta can be performed.
-
-    .PARAMETER Full
-        Description:    If specified will force remove any Hardware Inventory Data on the machine
-                        and re run.
-
-    .EXAMPLE
-        Delta:
-            Invoke-OGHWInventory
-        Full:
-            Invoke-OGHWInventory -Full
-
-    .NOTES
-        Name:        Invoke-HWInventory       
-        Author:      Richie Schuster - SCCMOG.com
-        Website:     https://www.sccmog.com
-        Contact:     @RichieJSY
-        Created:     2020-30-07
-        Updated:     -
-        
-        Version history:
-        1.0.0 - (2020-30-07) Function created
-    #>
     param(
         [parameter(Mandatory = $false)]
         [ValidateNotNullOrEmpty()]

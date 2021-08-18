@@ -19,30 +19,33 @@
 ##################################################################################################################################
 #  OS Region
 ##################################################################################################################################
+
+<#
+.SYNOPSIS
+    Get Operating System Version
+.DESCRIPTION
+    Gets the Operating system Version property from WMI Class Win32_OperatingSystem
+.EXAMPLE
+    PS C:\> Get-OGOSVersionNT
+    Returns the Operating System Version number.
+.INPUTS
+    N/A
+.OUTPUTS
+    Returns the Operating System Version number.
+.NOTES
+    Name:       Get-OGOSVersionNT
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-08-17
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2021-08-17 Function created
+#>
 Function Get-OGOSVersionNT {
-    <#
-    .SYNOPSIS
-        Get Operating System Version
-    .DESCRIPTION
-        Gets the Operating system Version property from WMI Class Win32_OperatingSystem
-    .EXAMPLE
-        PS C:\> Get-OGOSVersionNT
-        Returns the Operating System Version number.
-    .INPUTS
-        N/A
-    .OUTPUTS
-        Returns the Operating System Version number.
-    .NOTES
-           Name:       
-           Author:     Richie Schuster - SCCMOG.com
-           Website:    https://www.sccmog.com
-           Contact:    @RichieJSY
-           Created:    2021-08-17
-           Updated:    -
-    
-           Version history:
-               1.0.0 - 2021-08-17 Function created
-    #>
+
     $qOS = Get-WMIObject -Query "Select Version from Win32_OperatingSystem"
     ## Get the name of this function and write header
     $arrVersion = ($qOS.Version).Split(".")
@@ -50,39 +53,41 @@ Function Get-OGOSVersionNT {
     Write-OGLogEntry -logText "OS Version - $($qOS.Version)" 
     Return $osVal
 }
-Function Get-OGMSOfficeActiveProcesses {
-    <#
-    .SYNOPSIS
-        Gets MS Office Active Processes and returns them.
-    .DESCRIPTION
-        Gets MS Office Active Processes and returns them.
 
-    .EXAMPLE
-        PS C:\> Get-OGMSOfficeActiveProcesses
-            Returns MS Office Active Processes
-                Path -like "*\Microsoft Office\*"
-                ProcessName -like "*lync*"
-                ProcessName -like "*Outlook"
-                ProcessName -like "*OneNote"
-                ProcessName -like "*Groove*""
-                ProcessName -like "*MSOSync"
-                ProcessName -like "*Teams*""
-                ProcessName -like "*OneDriv*""
-    .INPUTS
-        N/A
-    .OUTPUTS
-        System.Diagnostics.Process
-    .NOTES
-           Name:       
-           Author:     Richie Schuster - SCCMOG.com
-           Website:    https://www.sccmog.com
-           Contact:    @RichieJSY
-           Created:    2021-08-17
-           Updated:    -
-    
-           Version history:
-               1.0.0 - 2021-08-17 Function created
-    #>
+<#
+.SYNOPSIS
+    Gets MS Office Active Processes and returns them.
+.DESCRIPTION
+    Gets MS Office Active Processes and returns them.
+
+.EXAMPLE
+    PS C:\> Get-OGMSOfficeActiveProcesses
+        Returns MS Office Active Processes
+            Path -like "*\Microsoft Office\*"
+            ProcessName -like "*lync*"
+            ProcessName -like "*Outlook"
+            ProcessName -like "*OneNote"
+            ProcessName -like "*Groove*""
+            ProcessName -like "*MSOSync"
+            ProcessName -like "*Teams*""
+            ProcessName -like "*OneDriv*""
+.INPUTS
+    N/A
+.OUTPUTS
+    System.Diagnostics.Process
+.NOTES
+    Name:       Get-OGMSOfficeActiveProcesses
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-08-17
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2021-08-17 Function created
+#>
+Function Get-OGMSOfficeActiveProcesses {
     $ActiveProcesses = Get-Process | Where-Object { (($_.path -like "*\Microsoft Office\*")`
                 -or ($_.ProcessName -like "*lync*")`
                 -or ($_.ProcessName -like "*Outlook*")`
@@ -101,41 +106,42 @@ Function Get-OGMSOfficeActiveProcesses {
 # Files Folder Region
 ##################################################################################################################################
 
-function Get-OGFileCertificate {
-    <#
-    .SYNOPSIS
-        Pull a certificate from a file
+<#
+.SYNOPSIS
+    Pull a certificate from a file
 
-    .DESCRIPTION
-        Pulls the certificate from a file and stores it at the root of the script by default.
+.DESCRIPTION
+    Pulls the certificate from a file and stores it at the root of the script by default.
 
-    .PARAMETER File
-        Description: Path to file to get Certificate from.
+.PARAMETER File
+    Description: Path to file to get Certificate from.
 
-    .PARAMETER writeLocation
-        Description:    Path to file to get Certificate from.
+.PARAMETER writeLocation
+    Description:    Path to file to get Certificate from.
 
-    .PARAMETER certName
-        Description:    Name of certificate for saving.
+.PARAMETER certName
+    Description:    Name of certificate for saving.
 
-    .EXAMPLE
-        Get-OGFileCertificate -File "$ENV:temp\myappxpackage.appx"
+.EXAMPLE
+    Get-OGFileCertificate -File "$ENV:temp\myappxpackage.appx"
+.EXAMPLE
+    Get-OGFileCertificate -File "$ENV:temp\myappxpackage.appx" -writeLocation "$ENV:programData"
+.EXAMPLE
+    Get-OGFileCertificate -File "$ENV:temp\myappxpackage.appx" -writeLocation "$ENV:programData" -certName "MyCert"
 
-        Get-OGFileCertificate -File "$ENV:temp\myappxpackage.appx" -writeLocation "$ENV:programData"
-
-        Get-OGFileCertificate -File "$ENV:temp\myappxpackage.appx" -writeLocation "$ENV:programData" -certName "MyCert"
-
-    .NOTES
-        Name:        Get-OGFileCertificate       
-        Author:      Richie Schuster - SCCMOG.com
-        Website:     https://www.sccmog.com
-        Contact:     @RichieJSY
-        Created:     2020-30-07
-        Updated:     -
-        
-        Version history:
-        1.0.0 - (2020-30-07) Function created
+.NOTES
+    Name:       Get-OGFileCertificate       
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2020-30-07
+    Updated:    -
+    
+    Version history:
+    1.0.0 - (2020-30-07) Function created
     #>
+function Get-OGFileCertificate {
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -166,37 +172,39 @@ function Get-OGFileCertificate {
         return $false
     }
 }
+
+<#
+.SYNOPSIS
+    Invoke-OGImportCertificate
+
+.DESCRIPTION
+    Imports a certificate
+
+.PARAMETER certPath
+    Description: Certificate path
+
+.PARAMETER certRootStore
+    Description:    Certificate root store
+
+.PARAMETER certStore
+    Description:    Name of certificate for saving.
+
+.EXAMPLE
+    Invoke-OGImportCertificate
+
+.NOTES
+    Name:       Get-OGFileCertificate       
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2020-30-07
+    Updated:    -
+    
+    Version history:
+    1.0.0 - (2020-30-07) Function created
+#>
 function Invoke-OGImportCertificate (){
-    <#
-    .SYNOPSIS
-        Invoke-OGImportCertificate
-
-    .DESCRIPTION
-        Imports a certificate
-
-    .PARAMETER certPath
-        Description: Certificate path
-
-    .PARAMETER certRootStore
-        Description:    Certificate root store
-
-    .PARAMETER certStore
-        Description:    Name of certificate for saving.
-
-    .EXAMPLE
-        Invoke-OGImportCertificate
-
-    .NOTES
-        Name:        Get-OGFileCertificate       
-        Author:      Richie Schuster - SCCMOG.com
-        Website:     https://www.sccmog.com
-        Contact:     @RichieJSY
-        Created:     2020-30-07
-        Updated:     -
-        
-        Version history:
-        1.0.0 - (2020-30-07) Function created
-    #>
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -224,29 +232,30 @@ function Invoke-OGImportCertificate (){
         return $false
     }
 }
+
+<#
+.SYNOPSIS
+Short description
+
+.DESCRIPTION
+Long description
+
+.PARAMETER certPath
+Parameter description
+
+.PARAMETER certRootStore
+Parameter description
+
+.PARAMETER certStore
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function Invoke-OGRemoveCertificate {
-    <#
-    .SYNOPSIS
-    Short description
-
-    .DESCRIPTION
-    Long description
-
-    .PARAMETER certPath
-    Parameter description
-
-    .PARAMETER certRootStore
-    Parameter description
-
-    .PARAMETER certStore
-    Parameter description
-
-    .EXAMPLE
-    An example
-
-    .NOTES
-    General notes
-    #>
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -278,31 +287,32 @@ function Invoke-OGRemoveCertificate {
     }
 }
 
+<#
+.SYNOPSIS
+    Gets the drive with the most free space
+
+.DESCRIPTION
+    Gets the drive with the most free space available and returns it.
+
+.EXAMPLE
+    Get-OGDriveMostFree
+
+.OUTPUTS
+    Retruns the drive letter with the most avaialable space.
+
+.NOTES
+    Name:       Get-OGDriveMostFree       
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2020-30-07
+    Updated:    -
+    
+    Version history:
+    1.0.0 - (2020-30-07) Function created
+#>
 function Get-OGDriveMostFree {
-    <#
-    .SYNOPSIS
-        Gets the drive with the most free space
-
-    .DESCRIPTION
-        Gets the drive with the most free space available and returns it.
-
-    .EXAMPLE
-        Get-OGDriveMostFree
-
-    .OUTPUTS
-        Retruns the drive letter with the most avaialable space.
-
-    .NOTES
-        Name:        Get-OGDriveMostFree       
-        Author:      Richie Schuster - SCCMOG.com
-        Website:     https://www.sccmog.com
-        Contact:     @RichieJSY
-        Created:     2020-30-07
-        Updated:     -
-        
-        Version history:
-        1.0.0 - (2020-30-07) Function created
-    #>
     #Get Largest internal Drive
     $LogicalDrives = Get-WmiObject -Class Win32_logicaldisk -Filter "DriveType = '3'"
     $max = ($LogicalDrives | measure-object -Property FreeSpace -maximum).maximum
@@ -311,6 +321,7 @@ function Get-OGDriveMostFree {
     $DMFS = "$($MostCapacityDrive.DeviceID)"
     return $DMFS
 }
+
 <#
 .SYNOPSIS
     Search logical drives for path
@@ -320,23 +331,21 @@ function Get-OGDriveMostFree {
     Will then return the path if found.
 
 .PARAMETER PathMinusDrive
-    Type: String
-    Mandatory: True
     Description: path to search for
-    Example: 
-        "$ENV:Windir\Temp"
-        "$ENV:Windir\Temp\file.txt"
 
 .EXAMPLE
     Start-OGSearchLogicalDrives -PathMinusDrive "VirtualMachines"
+.Example
+    Start-OGSearchLogicalDrives -PathMinusDrive "$ENV:Windir\Temp\file.txt"
 
 .NOTES
-    Name:        Start-OGSearchLogicalDrives   
-	Author:      Richie Schuster - SCCMOG.com
-    Website:     https://www.sccmog.com
-    Contact:     @RichieJSY
-    Created:     2020-06-08
-    Updated:     -
+    Name:       Start-OGSearchLogicalDrives   
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2020-06-08
+    Updated:    -
     
     Version history:
     1.0.0 - (2020-06-08) Module created
@@ -372,6 +381,7 @@ function Start-OGSearchLogicalDrives {
         return $false
     }
 }
+
 <#
 .SYNOPSIS
     Converts file size.
@@ -380,26 +390,17 @@ function Start-OGSearchLogicalDrives {
     Converts file size.
 
 .PARAMETER From
-    Type: String
-    Required: True
     Set: "Bytes", "KB", "MB", "GB", "TB"
 
 .PARAMETER To
-Description: 
-    Type: String
-    Required: True
+    Description: Convert it to
     Set: "Bytes", "KB", "MB", "GB", "TB"
 
 .PARAMETER Value
     Description: The amount to convert.
-    Type: double
-    Required: True
 
 .PARAMETER Precision
     Description: To N decimal places.
-    Type: int
-    Required: False
-    Default: 4
 
 .EXAMPLE
     Converting 123456MB to GB:
@@ -411,6 +412,7 @@ Description:
     Name:               Get-OGMSOfficeActiveProcesses 
     Original Source:    https://techibee.com/powershell/convert-from-any-to-any-bytes-kb-mb-gb-tb-using-powershell/237
     Updated by:         Richie Schuster - SCCMOG.com
+    GitHub:             https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:            https://www.sccmog.com
     Contact:            @RichieJSY
     Created:            https://techibee.com/powershell/convert-from-any-to-any-bytes-kb-mb-gb-tb-using-powershell/237
@@ -462,35 +464,38 @@ function Convert-OGFileSize {
     Example: @("$($ENV:SystemDrive)",'D:\Temp')
 
 .PARAMETER Exclude_Paths
-    Type: String Array
-    Required: False
     Description: Path(s) to be excluded
-    Example: @("$($ENV:SystemDrive)\Users", "$(${ENV:ProgramFiles(x86)})", "$($ENV:ProgramFiles)", "$($ENV:windir)")
 
 .PARAMETER FileTypes
-    Type: String Array
-    Required: True
     Description: File types to include. 
-    Example: @('*.txt', '*.pdf', '*.pst', '*.xlsx', '*.pptx', '*.pub', '*.docx', '*.csv','*.mp4')
 
 .PARAMETER MaxThreads
-    Type: int
-    Required: False
-    Default: 10
     Description: Max Job threads.
 
 .EXAMPLE
+    PS C:\> Get-OGOoBFiles -Search_Path $Paths -Exclude_Paths $Excludes -FileTypes $Include
+    Running and assinging parameters.
     Setting Variables:
-    [string[]]$Paths = @("$($ENV:SystemDrive)\")# 'D:\Temp')
-    [string[]]$Excludes = @("$($ENV:SystemDrive)\Users", "$(${ENV:ProgramFiles(x86)})", "$($ENV:ProgramFiles)", "$($ENV:windir)")
-    [string[]]$Include = @('*.txt', '*.pdf', '*.pst', '*.xlsx', '*.pptx', '*.pub', '*.docx', '*.csv','*.mp4')
+        [string[]]$Paths = @("$($ENV:SystemDrive)\")# 'D:\Temp')
+        [string[]]$Excludes = @("$($ENV:SystemDrive)\Users", "$(${ENV:ProgramFiles(x86)})", "$($ENV:ProgramFiles)", "$($ENV:windir)")
+        [string[]]$Include = @('*.txt', '*.pdf', '*.pst', '*.xlsx', '*.pptx', '*.pub', '*.docx', '*.csv','*.mp4')
     
-    #Running and assinging parameters.
-    $FilesFound  = Get-OGOoBFiles -Search_Path $Paths -Exclude_Paths $Excludes -FileTypes $Include
+
+.EXAMPLE   
+    PS C:\> Get-OGOoBFiles -Search_Path $Paths -Exclude_Paths $Excludes -FileTypes $Include -MaxThreads 2
+    Running and assinging parameters with max 2 Jobs.
+    Varable Example:
+        [string[]]$Paths = @("$($ENV:SystemDrive)\")# 'D:\Temp')
+        [string[]]$Excludes = @("$($ENV:SystemDrive)\Users", "$(${ENV:ProgramFiles(x86)})", "$($ENV:ProgramFiles)", "$($ENV:windir)")
+        [string[]]$Include = @('*.txt', '*.pdf', '*.pst', '*.xlsx', '*.pptx', '*.pub', '*.docx', '*.csv','*.mp4')
+    
+ 
+
 
 .NOTES
     Name:       Get-OGOoBFiles       
 	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-11
@@ -560,6 +565,7 @@ function Get-OGOoBFiles {
         return $false
     }
 }
+
 <#
 .SYNOPSIS
     #Create Edge PWA Applications from URL
@@ -575,11 +581,13 @@ function Get-OGOoBFiles {
 
 .EXAMPLE
     New-OGPWAApplications -Mode Install -ConfigFile "C:\Admin\New-CustomPWAApp\PWA_Applications.json" -Icons "C:\Admin\New-CustomPWAApp\icons"
+.EXAMPLE
     New-OGPWAApplications -Mode Uninstall -ConfigFile "C:\Admin\New-CustomPWAApp\PWA_Applications.json"
 
 .NOTES
     Name:       New-OGPWAApplications       
 	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-11
@@ -690,6 +698,7 @@ function New-OGPWAApplications {
         return $false
     }
 }
+
 <#
 .SYNOPSIS
 Create a new Shortcut
@@ -698,53 +707,38 @@ Create a new Shortcut
 This function has been designed to create a shortcut.
 
 .PARAMETER Target
-    Type: String
-    Mandatory: True
-    Description: The target of the shortcut:
-    Example: $ENV:Windir\\System32\VMConnect.exe
+The target of the shortcut:
             
 .PARAMETER TargetArgs
-    Type: String
-    Mandatory: True
-    Description: Arguments of the shortcut:
-    Example: localhost VMNameHere
+Arguments of the shortcut
 
 .PARAMETER RunAsAdmin
-    Type: Switch
-    Mandatory: False
-    Description: if specified will force the shortcut to run as Admin
+If specified will force the shortcut to run as Admin
 
 .PARAMETER ShortcutName
-    Type: String
-    Mandatory: True
-    Description: Shortcut filename.
-    Example: RichiesVM
+Shortcut filename
 
 .PARAMETER ShortcutLocation
-    Type: String
-    Mandatory: True
-    Description: Shortcut location.
-    Example: $env:Public\Desktop
+Shortcut location
 
 .PARAMETER ShortcutType
-    Type: String set
-    Mandatory: True
-    Description: Shortcut to file or URL. 
-    Example: File or URL
-        File type set to:
-            File - .lnk
-            URL  - .url 
+Shortcut to file or URL. 
+File type set to:
+    File - .lnk
+    URL  - .url 
 
 .EXAMPLE
     New-OGShortcut -Target "$ENV:windir\System32\vmconnect.exe" -TargetArgs "localhost VMNameHere" -RunAsAdmin -ShortcutName "RichiesVM" -ShortcutLocation "$env:Public\Desktop" -ShortcutType "File"
+    Creates a shortcut.
 
 .NOTES
-    Name:        New-OGShortcut       
-	Author:      Richie Schuster - SCCMOG.com
-    Website:     https://www.sccmog.com
-    Contact:     @RichieJSY
-    Created:     2020-30-07
-    Updated:     -
+    Name:       New-OGShortcut       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2020-30-07
+    Updated:    -
     
     Version history:
     1.0.0 - (2020-30-07) Function created
@@ -796,6 +790,7 @@ function New-OGShortcut {
 ##################################################################################################################################
 #  Scheduled Task Region
 ##################################################################################################################################
+
 <#
 .SYNOPSIS
     Gets A Windows 7/Server 2008 Sceduled Task. 
@@ -804,9 +799,7 @@ function New-OGShortcut {
     Gets A Windows 7/Server 2008 Sceduled Task. 
 
 .PARAMETER TaskName
-    Type:           String
-    Required:       True
-    Description:    Name of task to search for.
+    Name of task to search for.
 
 .EXAMPLE
     Get-OGWin7ScheduledTask -TaskName "My Task Name here"
@@ -814,6 +807,7 @@ function New-OGShortcut {
 .NOTES
     Name:       2021-08-17       
 	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    
@@ -833,6 +827,7 @@ Function Get-OGWin7ScheduledTask {
     $Folder = $Schedule.GetFolder('\')
     $Folder.GetTask($TaskName)
 }
+
 <#
 .SYNOPSIS
     Stops a scheduled task
@@ -840,9 +835,7 @@ Function Get-OGWin7ScheduledTask {
     Stops a scheduled task
 
 .PARAMETER TaskName
-    Type:           String
-    Required:       True
-    Description:    Name of task to stop.
+    Name of task to stop.
 
 .EXAMPLE
     Stop-OGScheduledTask -TaskName "Name Of My Task"
@@ -850,6 +843,7 @@ Function Get-OGWin7ScheduledTask {
 .NOTES
     Name:       Stop-OGScheduledTask       
 	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-17
@@ -878,6 +872,7 @@ Function Stop-OGScheduledTask {
         Write-OGLogEntry -logText "Failed to stop ($TaskName). Error: $($Error[0].Exception.Message)" -logtype Error
     }
 }
+
 <#
 .SYNOPSIS
     Starts a scheduled task.
@@ -886,9 +881,7 @@ Function Stop-OGScheduledTask {
     Starts a scheduled task.
 
 .PARAMETER TaskName
-    Type:           String
-    Required:       True
-    Description:    Name of task to stop.
+    Name of task to stop.
 
 .EXAMPLE
     Start-OGScheduledTask -TaskName "Your Task Name"
@@ -896,6 +889,7 @@ Function Stop-OGScheduledTask {
 .NOTES
     Name:       Start-OGScheduledTask       
 	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-17
@@ -925,6 +919,7 @@ Function Start-OGScheduledTask {
         Write-OGLogEntry -logText "Failed to start $taskname ($OSVersion). Error: $($Error[0].Exception.Message)" -logtype Error
     }
 }
+
 <#
 .SYNOPSIS
     Removes a registered scheduled task
@@ -933,9 +928,7 @@ Function Start-OGScheduledTask {
     Removes a registered scheduled task
 
 .PARAMETER TaskName
-    Type:           String
-    Required:       True
-    Description:    Name of task to remove.
+    Name of task to remove.
 
 .EXAMPLE
     Remove-OGScheduledTask -TaskName "Your Task Name"
@@ -943,6 +936,7 @@ Function Start-OGScheduledTask {
 .NOTES
     Name:       Remove-OGScheduledTask       
 	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-17
@@ -987,6 +981,7 @@ Function Remove-OGScheduledTask {
 ##################################################################################################################################
 # Script Region
 ##################################################################################################################################
+
 <#
 .SYNOPSIS
     Starts a script sleep with progress.
@@ -995,20 +990,19 @@ Function Remove-OGScheduledTask {
     This function starts a sleep command with a GUI and CLI progress bar.
 
 .PARAMETER seconds
-    Type: Int
-    Mandatory: True
-    Description: Specifies how long to sleep for. 
+    Specifies how long to sleep for. 
 
 .EXAMPLE
     Start-OGSleeper -Seconds 20
 
 .NOTES
-    Name:        Start-OGSleeper   
-	Author:      Richie Schuster - SCCMOG.com
-    Website:     https://www.sccmog.com
-    Contact:     @RichieJSY
-    Created:     2020-30-07
-    Updated:     -
+    Name:       Start-OGSleeper   
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2020-30-07
+    Updated:    -
     
     Version history:
     1.0.0 - (2020-30-07) Module created
@@ -1027,6 +1021,7 @@ function Start-OGSleeper ($seconds) {
     Write-Progress -Activity "Sleeping" -Status "Sleeping..." -SecondsRemaining 0 -Completed
     Write-OGLogEntry -logText " Complete"
 }
+
 <#
 .SYNOPSIS
     Get and report on all script variables.
@@ -1040,6 +1035,7 @@ function Start-OGSleeper ($seconds) {
 .NOTES
     Name:       Get-OGUDVariables       
 	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-17
@@ -1093,8 +1089,6 @@ function Get-OGUDVariables {
     Checks if a Windows Service exists
 
 .PARAMETER ServiceName
-    Type:           String
-    Required:       True
     Description:    Name of servie to test for.
 
 .EXAMPLE
@@ -1104,6 +1098,7 @@ function Get-OGUDVariables {
     Sourced:    #https://stackoverflow.com/questions/4967496/check-if-a-windows-service-exists-and-delete-in-powershell    
     Name:       Test-OGServiceExists   
 	Updated:    Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2020-30-07
@@ -1134,8 +1129,6 @@ Function Test-OGServiceExists{
     Checks if a Windows Service exists
 
 .PARAMETER ServiceName
-    Type:           String
-    Required:       True
     Description:    Name of servie to test for.
 
 .EXAMPLE
@@ -1145,6 +1138,7 @@ Function Test-OGServiceExists{
     Sourced:    https://stackoverflow.com/questions/4967496/check-if-a-windows-service-exists-and-delete-in-powershell  
     Name:       Remove-OGService   
 	Updated:    Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2020-30-07
@@ -1169,7 +1163,8 @@ Function Remove-OGService () {
         else{
             return $false
         }
-    }Else{
+    }
+    Else{
         Write-OGLogEntry -logText "No service with name: $($ServiceName)" -LogType Warning
         return $false
     }
