@@ -21,13 +21,13 @@ If specified will force remove any Hardware Inventory Data on the machine and re
     Clears current HW Inventory WMI and re runs.
 
 .NOTES
-    Name:        Invoke-HWInventory       
-    Author:      Richie Schuster - SCCMOG.com
-    Website:     https://www.sccmog.com
-    GitHub:      https://github.com/SCCMOG/PS.SCCMOG.TOOLS
-    Contact:     @RichieJSY
-    Created:     2020-30-07
-    Updated:     -
+    Name:       Invoke-HWInventory       
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2020-30-07
+    Updated:    -
     
     Version history:
     1.0.0 - (2020-30-07) Function created

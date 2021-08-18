@@ -48,10 +48,10 @@
     #>
 function Write-OGLogEntry {
     param(
-        [Parameter(Mandatory = $false, HelpMessage = 'Text to log')]
+        [Parameter(Mandatory = $false, Position=0)]
         [ValidateNotNullOrEmpty()]
         [String]$logText,
-        [Parameter(Mandatory = $false, HelpMessage = 'Info|Warning|Error|Header|Footer')]
+        [Parameter(Mandatory = $false,  Position=1, HelpMessage = 'Info|Warning|Error|Header|Footer')]
         [ValidateSet("Info","Warning","Error","Header","Footer")]
         [String]$logtype = "Info"
     )

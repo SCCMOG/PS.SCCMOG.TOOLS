@@ -1,6 +1,7 @@
 ##################################################################################################################################
 #  Report Region
 ##################################################################################################################################
+
 <#
 .SYNOPSIS
     Get all updates installed withim N days
@@ -9,17 +10,16 @@
     Get all updates installed withim N days
 
 .PARAMETER InstalledWithinNdays
-    Type:           Int
-    Required:       True
-    Description:    Installed withim N days
+    Installed withim N days
 
 .EXAMPLE
+    PS C:\> Get-OGWuaHistory -InstalledWithinNdays 1
     Gets all updates installed within the last 1 day:
-        Get-OGWuaHistory -InstalledWithinNdays 1
 
 .NOTES
     Name:       Get-OGWuaHistory       
 	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-17
@@ -27,7 +27,6 @@
     
     Version history:
     1.0.0 - 2021-08-17 Script created
-#>
 #>
 function Get-OGWuaHistory {
     param( [Parameter(Mandatory = $true)]

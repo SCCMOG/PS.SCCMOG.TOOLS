@@ -10,6 +10,7 @@
 ##################################################################################################################################
 # Get Registry Region
 ##################################################################################################################################
+
 <#
 .SYNOPSIS
     Search a machines x6 and x86 Uninstall registry key for a specific Application (Appwiz.cpl) Name
@@ -18,39 +19,34 @@
     Search a machines x6 and x86 Uninstall registry key for a specific Application (Appwiz.cpl) Name
 
 .PARAMETER ProductNames
-    Type:           String Array
-    Required:       True
-    Description:    Application name(s)
+    Application name(s)
 
 .PARAMETER MachineName
-    Type:           String Array
-    Required:       True
-    Default:        $:ENV:ComputerName
-    Description:    Application name(s)
+    Machine to query.
 
 .PARAMETER WildCard
-    Type:           switch
-    Required:       false
-    Description:    If entered will wildcard the application name. Front and back.
+    If entered will wildcard the application name. Front and back.
 
 .PARAMETER Log
-    Type:           switch
-    Required:       false
-    Description:    Write results to logfile.
+    Write results to logfile.
 
 .EXAMPLE
-    Exact Add remove programs name or appname local machine
-        Get-OGProductUninstallKey -ProductNames "McAfee VirusScan Enterprise"
-    Exact Add remove programs name or appname remote (can add FQDN if required)
-        Get-OGProductUninstallKey -ProductNames "McAfee VirusScan Enterprise" -MachineName "JSY-CCMSVRVP001"
-    Wild card app name local machine
-        Get-OGProductUninstallKey -ProductNames "McAfee" -WildCard
-    Wild card app name remote (can add FQDN if required)
-        Get-OGProductUninstallKey -ProductNames "McAfee" -MachineName "JSY-CCMSVRVP001" -WildCard
+        PS C:\> Get-OGProductUninstallKey -ProductNames "McAfee VirusScan Enterprise"
+        Exact Add remove programs name or appname local machine
+.EXAMPLE
+        PS C:\> Get-OGProductUninstallKey -ProductNames "McAfee VirusScan Enterprise" -MachineName "SERVERNAME"
+        Exact Add remove programs name or appname remote (can add FQDN if required)
+.EXAMPLE
+        PS C:\> Get-OGProductUninstallKey -ProductNames "McAfee" -WildCard
+        Wild card app name local machine
+.EXAMPLE
+        PS C:\> Get-OGProductUninstallKey -ProductNames "McAfee" -MachineName "SERVERNAME" -WildCard
+        Wild card app name remote (can add FQDN if required)
 
 .NOTES
     Name:       Get-OGProductUninstallKey 
     Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-17

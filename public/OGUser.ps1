@@ -1,56 +1,57 @@
 ##################################################################################################################################
 # Current User Region
 ##################################################################################################################################
+
+<#
+.SYNOPSIS
+        Gets logged on user
+.DESCRIPTION
+    This function gets all users that are currently connected to a device and then returns the Active user as a custom PS Object.
+.EXAMPLE
+    PS C:\> Get-OGLoggedOnUser
+    
+    Returns a $CurrentLoggedOnUser Object with properties:
+
+        USERNAME          : rkcsj
+        USERPROFILE       : C:\Users\rkcsj
+        USERDOMAIN        : RSNUC
+        SID               : S-1-5-21-1291184173-2927567776-2264912970-1001
+        DNSDOMAIN         :
+        LOGONSERVER       : \\RSNUC
+        HOMEPATH          : \Users\rkcsj
+        HOMEDRIVE         : C:
+        APPDATA           : C:\Users\rkcsj\AppData\Roaming
+        LOCALAPPDATA      : C:\Users\rkcsj\AppData\Local
+        Domain_SamAccount : RSNUC\rkcsj
+
+.OUTPUTS
+    Returns a $CurrentLoggedOnUser PowerShell Object with properties:
+        
+        USERNAME          : rkcsj
+        USERPROFILE       : C:\Users\rkcsj
+        USERDOMAIN        : RSNUC
+        SID               : S-1-5-21-1291444473-292444476-2264444970-1001
+        DNSDOMAIN         : SCCMOG.local
+        LOGONSERVER       : \\RSNUC
+        HOMEPATH          : \Users\rkcsj
+        HOMEDRIVE         : C:
+        APPDATA           : C:\Users\rkcsj\AppData\Roaming
+        LOCALAPPDATA      : C:\Users\rkcsj\AppData\Local
+        Domain_SamAccount : RSNUC\rkcsj
+
+.NOTES
+    Name:        Get-OGLoggedOnUser   
+    Author:      Richie Schuster - SCCMOG.com
+    Website:     https://www.sccmog.com
+    Contact:     @RichieJSY
+    Created:     2021-06-14
+    Updated:     -
+    
+    Version history:
+    1.0.0 - (2021-06-14) Function created
+#>  
 function Get-OGLoggedOnUser () {
-    <#
-    .SYNOPSIS
-         Gets logged on user
-    .DESCRIPTION
-        This function gets all users that are currently connected to a device and then returns the Active user as a custom PS Object.
-    .EXAMPLE
-        PS C:\> Get-OGLoggedOnUser
-        
-        Returns a $CurrentLoggedOnUser Object with properties:
-
-            USERNAME          : rkcsj
-            USERPROFILE       : C:\Users\rkcsj
-            USERDOMAIN        : RSNUC
-            SID               : S-1-5-21-1291184173-2927567776-2264912970-1001
-            DNSDOMAIN         :
-            LOGONSERVER       : \\RSNUC
-            HOMEPATH          : \Users\rkcsj
-            HOMEDRIVE         : C:
-            APPDATA           : C:\Users\rkcsj\AppData\Roaming
-            LOCALAPPDATA      : C:\Users\rkcsj\AppData\Local
-            Domain_SamAccount : RSNUC\rkcsj
-
-    .OUTPUTS
-        Returns a $CurrentLoggedOnUser PowerShell Object with properties:
-            
-            USERNAME          : rkcsj
-            USERPROFILE       : C:\Users\rkcsj
-            USERDOMAIN        : RSNUC
-            SID               : S-1-5-21-1291444473-292444476-2264444970-1001
-            DNSDOMAIN         : SCCMOG.local
-            LOGONSERVER       : \\RSNUC
-            HOMEPATH          : \Users\rkcsj
-            HOMEDRIVE         : C:
-            APPDATA           : C:\Users\rkcsj\AppData\Roaming
-            LOCALAPPDATA      : C:\Users\rkcsj\AppData\Local
-            Domain_SamAccount : RSNUC\rkcsj
-
-    .NOTES
-        Name:        Get-OGLoggedOnUser   
-        Author:      Richie Schuster - SCCMOG.com
-        Website:     https://www.sccmog.com
-        Contact:     @RichieJSY
-        Created:     2021-06-14
-        Updated:     -
-        
-        Version history:
-        1.0.0 - (2021-06-14) Function created
-    #>
-    Write-OGLogEntry -Logtext "Function: Get-LoggedOnUser Getting Currently logged on user for machine: $($ENV:COMPUTERNAME)"
+    Write-OGLogEntry -Logtext "Getting Currently logged on user for machine: $($ENV:COMPUTERNAME)"
     $CurrentLoggedOnUser = $null
     $AllUserCheck = @()
     $UserQuery = query user
