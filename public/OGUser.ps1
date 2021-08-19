@@ -4,7 +4,7 @@
 
 <#
 .SYNOPSIS
-        Gets logged on user
+    Gets logged on user
 .DESCRIPTION
     This function gets all users that are currently connected to a device and then returns the Active user as a custom PS Object.
 .EXAMPLE
@@ -156,7 +156,6 @@ function Get-OGLoggedOnUser () {
     Write-OGLogEntry -Logtext "Current logged on user: $($CurrentLoggedOnUser.USERNAME)"
     return $CurrentLoggedOnUser
 }
-Get-OGLoggedOnUser
 ##################################################################################################################################
 # End Current User Region
 ##################################################################################################################################
