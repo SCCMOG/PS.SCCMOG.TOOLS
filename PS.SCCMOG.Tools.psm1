@@ -13,7 +13,7 @@ foreach ($publicScript in $publicFiles) {
         Write-error "Failed to import Publicmodule file: '$($publicScript.FullName)'. $_" -Verbose
     }
 }
-foreach ($privateScript in $privateFiles) {
+<#foreach ($privateScript in $privateFiles) {
     try {
         Write-Verbose "Importing Private module file: '$($privateScript.Name)'" -Verbose
         . $privateScript.FullName
@@ -21,7 +21,7 @@ foreach ($privateScript in $privateFiles) {
     catch {
         Write-error "Failed to import Private module file: '$($privateScript.FullName)'. $_" -Verbose
     }
-}
+}#>
 
 function IntializePSSCCMOGModule () {
     #Global
