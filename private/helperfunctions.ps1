@@ -28,10 +28,12 @@ function getCallSequence(){
     #reverse array
     #[array]::Reverse($callStack)
     $scriptName = $callStack | Select-Object -First 1
-    $stringCallStack = $callStack -join "|"
-    #$stringCallStack = $callStack -join " | "
-    
-    
+    if (!([string]::IsNullOrEmpty($callStack))){
+        $stringCallStack = $callStack -join "|"
+    }
+    else{
+        $stringCallStack = "DEBUG"
+    }
     #Obtain the details of the line in the script being executed and the function/script names
     $lineArray = $trace.ScriptLineNumber -split ' '
     $lineArray = $lineArray | Select-Object -Skip 2 | Select-Object -SkipLast 1
@@ -42,8 +44,6 @@ function getCallSequence(){
     else{
         $lineArray = "0"
     }
-
-
     #create script function call information
     $functionCall = new-scriptFrame -frameName $stringCallStack -Line $line -scriptname $scriptName
     return $functionCall
