@@ -134,7 +134,7 @@ function writeLogEntry{
     switch("$($objLogEntry.LogType)"){
         { @("Info", "Warning","Error") -contains $_ }{
             #Build standard log file entry
-            $logFileEntry = "[{0,-19}][{1}][{2}][{3}][{4}] --> {5}" -f $(($objLogEntry.DateTime).ToString('yyyy-MM-dd HH:mm:ss.fff')),
+            $logFileEntry = "[{0,-19}][{1}][{2}][{3}][{4}] >>> {5}" -f $(($objLogEntry.DateTime).ToString('yyyy-MM-dd HH:mm:ss.fff')),
                                                                         $($objLogEntry.Trace),
                                                                         $($objLogEntry.Line),
                                                                         $($objLogEntry.PID),
