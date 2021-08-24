@@ -108,6 +108,66 @@ Function Get-OGMSOfficeActiveProcesses {
 
 <#
 .SYNOPSIS
+    Gets a Temp File/Folder location.
+.DESCRIPTION
+    Creates if not found and returns the path of a Temp File/Folder location.
+.EXAMPLE
+    PS C:\> Get-OGTempStorage -File
+    Creates if not found and returns the path of a Temp File/Folder location.
+.EXAMPLE
+    PS C:\> Get-OGTempStorage
+    Creates if not found and returns the path of a Temp File/Folder location.
+.PARAMETER File
+    Gets a Temp file location.
+.PARAMETER Folder
+    Gets a Temp folder location.
+.INPUTS
+    Inputs (if any)
+.OUTPUTS
+    Output (if any)
+.NOTES
+    Name:       Get-OGTempStorage
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-08-24
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2021-08-24 Function created
+#>
+function Get-OGTempStorage(){
+    param (
+        [switch]$File,
+        [switch]$Folder
+    )
+    Do{
+        if ($Folder) {
+            Write-Verbose "Getting temp Folder path."
+            $tempStorage = [System.IO.Path]::GetTempPath()
+        }
+        elseif ($File) {
+            Write-Verbose "Getting temp File path."
+            $tempStorage = [System.IO.Path]::GetTempFileName()
+        }
+        else{
+            throw "Please supply switch: File | Folder"
+        }
+        start-sleep -Milliseconds 300
+        $MaxReps++
+    }
+    Until((test-path $tempStorage)-or($MaxReps -eq 100))
+    if($MaxReps -eq 100){
+        throw "Creating Temp file/folder timed out."
+    }
+    else{
+        Write-Verbose "Tempstorage location: '$($tempStorage)' "
+        return $tempStorage
+    }
+}
+
+<#
+.SYNOPSIS
     Pull a certificate from a file
 
 .DESCRIPTION
