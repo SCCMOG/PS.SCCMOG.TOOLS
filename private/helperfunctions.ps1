@@ -20,7 +20,7 @@ function getCallSequence(){
 
     #Get current call stack
     $trace = Get-PSCallStack
-    $trace | ForEach-Object { if (( $_.Command -notlike "*Log-Entry*") `
+    $trace | ForEach-Object { if (( $_.Command -notlike "*Write-OGLogEntry*") `
                                     -and($_.Command -notlike "*<ScriptBlock>*") `
                                     -and($_.Command -notlike "*getCallSequence*"))
                                     {$stack += $_.Command}}
