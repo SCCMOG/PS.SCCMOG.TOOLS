@@ -20,7 +20,10 @@ function getCallSequence(){
 
     #Get current call stack
     $trace = Get-PSCallStack
-    $trace | ForEach-Object { if (( $_.Command -notlike "*Log-Entry*")-and($_.Command -notlike "*<ScriptBlock>*")){$stack += $_.Command}}
+    $trace | ForEach-Object { if (( $_.Command -notlike "*Log-Entry*") `
+                                    -and($_.Command -notlike "*<ScriptBlock>*") `
+                                    -and($_.Command -notlike "*getCallSequence*"))
+                                    {$stack += $_.Command}}
     $callStack = $stack[-1..-($stack.Length - 2)]
     #reverse array
     #[array]::Reverse($callStack)
