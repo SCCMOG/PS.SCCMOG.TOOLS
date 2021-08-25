@@ -50,7 +50,12 @@ Function Get-OGRecursiveAADGroupMemberUsers{
         $AzureGroupName
     )
     Begin{
-        If(-not(Get-AzureADCurrentSessionInfo)){Connect-AzureAD}
+        try{
+            Get-AzureADCurrentSessionInfo
+        }
+        catch{
+            Connect-AzureAD
+        }
     }
     Process {
         $AzureGroup = Get-AzureADGroup -SearchString "$AzureGroupName" -ErrorAction Stop
