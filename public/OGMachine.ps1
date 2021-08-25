@@ -1214,3 +1214,31 @@ Function Remove-OGService () {
 ##################################################################################################################################
 # End Service Region
 ##################################################################################################################################
+
+#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+$Export = @(
+    "Convert-OGFileSize",
+    "Get-OGDriveMostFree",
+    "Get-OGFileCertificate",
+    "Get-OGMSOfficeActiveProcesses",
+    "Get-OGOoBFiles",
+    "Get-OGOSVersionNT",
+    "Get-OGTempStorage",
+    "Get-OGUDVariables",
+    "Get-OGWin7ScheduledTask",
+    "Invoke-OGImportCertificate",
+    "Invoke-OGRemoveCertificate",
+    "New-OGPWAApplications",
+    "New-OGShortcut",
+    "Remove-OGScheduledTask",
+    "Remove-OGService",
+    "Start-OGScheduledTask",
+    "Start-OGSearchLogicalDrives",
+    "Start-OGSleeper",
+    "Stop-OGScheduledTask",
+    "Test-OGServiceExists"
+)
+
+foreach ($module in $Export){
+    Export-ModuleMember $module
+}

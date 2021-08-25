@@ -70,4 +70,14 @@ Function Get-OGRecursiveAADGroupMemberUsers{
         Return $UserMembers
     }
 }
-    
+
+
+<#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+$Export = @(
+    "Convert-OGFileSize"
+)
+
+foreach ($module in $Export){
+    Export-ModuleMember $module
+}
+#>

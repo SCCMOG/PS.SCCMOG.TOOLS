@@ -369,3 +369,14 @@ foreach ($function in $Export_Functions){
 #          Write-Error "No Event log with name: '$($EventLogName)'' found please create it first using Set-OGEventLog and the Force switch applied."
 #     }
 # }
+#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+$Export = @(
+    "Enable-OGLogMutex",
+    "Set-OGEventLogLogging",
+    "Set-OGLogEntryPath",
+    "Write-OGLogEntry"
+)
+
+FOREACH ($module in $Export){
+    Export-ModuleMember $module
+}

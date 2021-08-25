@@ -4,6 +4,15 @@ $privateFiles = @( Get-ChildItem $PSScriptRoot\private\*.ps1)
 
 #Load Module files
 #$scripts = @( $publicFiles + $privateFiles)
+foreach ($privateScript in $privateFiles) {
+    try {
+        Write-Verbose "Importing Private module file: '$($privateScript.Name)'" -Verbose
+        . $privateScript.FullName
+    }
+    catch {
+        Write-error "Failed to import Private module file: '$($privateScript.FullName)'. $_" -Verbose
+    }
+}#>
 foreach ($publicScript in $publicFiles) {
     try {
         Write-Verbose "Importing Public module file: '$($publicScript.Name)'" -Verbose
@@ -13,15 +22,6 @@ foreach ($publicScript in $publicFiles) {
         Write-error "Failed to import Publicmodule file: '$($publicScript.FullName)'. $_" -Verbose
     }
 }
-<#foreach ($privateScript in $privateFiles) {
-    try {
-        Write-Verbose "Importing Private module file: '$($privateScript.Name)'" -Verbose
-        . $privateScript.FullName
-    }
-    catch {
-        Write-error "Failed to import Private module file: '$($privateScript.FullName)'. $_" -Verbose
-    }
-}#>
 
 function IntializePSSCCMOGModule () {
     #Global

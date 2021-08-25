@@ -159,3 +159,12 @@ function Get-OGLoggedOnUser () {
 ##################################################################################################################################
 # End Current User Region
 ##################################################################################################################################
+
+#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+$Export = @(
+    "Get-OGLoggedOnUser"
+)
+
+foreach ($module in $Export){
+    Export-ModuleMember $module
+}

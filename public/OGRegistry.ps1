@@ -143,3 +143,13 @@ function Get-OGProductUninstallKey {
 ##################################################################################################################################
 # End Get Registry Region
 ##################################################################################################################################
+
+
+#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+$Export = @(
+    "Get-OGProductUninstallKey"
+)
+
+foreach ($module in $Export){
+    Export-ModuleMember $module
+}

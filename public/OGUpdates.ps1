@@ -73,3 +73,12 @@ function Get-OGWuaHistory {
 ##################################################################################################################################
 # End Report Region
 ##################################################################################################################################
+
+#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+$Export = @(
+    "Get-OGWuaHistory"
+)
+
+foreach ($module in $Export){
+    Export-ModuleMember $module
+}

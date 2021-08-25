@@ -52,3 +52,13 @@ function Invoke-OGHWInventory {
 ##################################################################################################################################
 # End ConfigMgr Client  Region
 ##################################################################################################################################
+
+
+#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+$Export = @(
+    "Invoke-OGHWInventory"
+)
+
+foreach ($module in $Export){
+    Export-ModuleMember $module
+}

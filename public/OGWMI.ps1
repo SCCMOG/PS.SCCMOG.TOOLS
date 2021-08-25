@@ -514,3 +514,18 @@ $objClass=[wmiclass]'\\.\root\SCCMOG':CLV_LocalAdmin
 #Delete a class
 $objClass.Delete()
 #>
+
+
+#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+$Export = @(
+    "Get-OGWMIClass",
+    "New-OGWMIClass",
+    "New-OGWMIInstance",
+    "New-OGWMINameSpace",
+    "Remove-OGWMIClass",
+    "Remove-OGWMINameSpace"
+)
+
+foreach ($module in $Export){
+    Export-ModuleMember $module
+}
