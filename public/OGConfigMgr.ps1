@@ -112,7 +112,8 @@ function Invoke-OGHWInventory {
 
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
-    "Invoke-OGHWInventory"
+    "Invoke-OGHWInventory",
+    "Connect-ConfigMgr"
 )
 
 foreach ($module in $Export){
