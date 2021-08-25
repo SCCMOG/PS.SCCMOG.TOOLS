@@ -305,6 +305,12 @@ function initializeEventLogs{
 
 
 function checkAdminRights (){
-    $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
-    $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    $Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    if (($Identity.Name -notlike "NT AUTHORITY\SYSTEM")){
+        $currentPrincipal = New-Object Security.Principal.WindowsPrincipal($Identity)
+        $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+    Else{
+        return $true
+    }
 }
