@@ -55,10 +55,11 @@
     1.0.0 - (2021-06-14) Function created
     1.1.0 - 2021-08-19 - Added Azure AD information.
 #>  
-function Get-OGLoggedOnUser () {
-    Write-OGLogEntry -Logtext "Getting Currently logged on user for machine: $($ENV:COMPUTERNAME)"
+function Get-OGLoggedOnUser{
+    [cmdletbinding()]
     $CurrentLoggedOnUser = $null
     $AllUserCheck = @()
+    Write-OGLogEntry -Logtext "Getting Currently logged on user for machine: $($ENV:COMPUTERNAME)"
     $UserQuery = query user
     foreach($User in $UserQuery){
         $Username        = $User.Substring(1,22).trim()

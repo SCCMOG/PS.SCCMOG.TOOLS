@@ -47,6 +47,7 @@
                1.0.0 - 2021-08-18 Function created
     #>
 function Write-OGLogEntry {
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $false, Position=0)]
         [ValidateNotNullOrEmpty()]
@@ -125,7 +126,7 @@ If used will append to a current log file if one is foun dthe new location.
             1.0.0 - 2021-08-18 Function created
 #>
 function Set-OGLogEntryPath (){
-
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $true, HelpMessage = 'Path')]
         [ValidateNotNullOrEmpty()]
@@ -170,6 +171,7 @@ function Set-OGLogEntryPath (){
         1.0.0 - 2021-08-18 Function created
 #>
 function Enable-OGLogMutex (){
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $false, HelpMessage = 'Creates a Mutex to enable file handle sharing for writing logs.')]
         [switch]$Enable=$false
@@ -235,6 +237,7 @@ Disable event log logging.
            1.0.0 - 2021-08-18 Function created
 #>
 function Set-OGEventLogLogging{
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $false)]
         [ValidateNotNullOrEmpty()]

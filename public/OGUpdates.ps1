@@ -29,6 +29,7 @@
     1.0.0 - 2021-08-17 Script created
 #>
 function Get-OGWuaHistory {
+    [cmdletbinding()]
     param( [Parameter(Mandatory = $true)]
         [int] $InstalledWithinNdays
     )

@@ -28,6 +28,7 @@
         1.0.0 - 2021-08-18 Function created
 #>
 function New-OGWMINameSpace {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory=$true, HelpMessage = "The new Namespace name to create in ROOT")]
         [string]$Name,
@@ -82,6 +83,7 @@ function New-OGWMINameSpace {
             1.0.0 - 2021-08-18 Function created
 #>
 function Remove-OGWMINameSpace  {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory=$true, HelpMessage = "The Namespace's name to be removed from ROOT")]
         [string]$Name,
@@ -211,6 +213,7 @@ function Remove-OGWMINameSpace  {
         1.0.0 - 2021-08-18 Function created
 #>
 function New-OGWMIClass {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory=$true, HelpMessage = "The JSON of the class(s) to create")]
         [string]$Class_JSON,
@@ -314,6 +317,7 @@ function New-OGWMIClass {
         1.0.0 - 2021-08-18 Function created
 #>
 function Remove-OGWMIClass {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory=$true)]
         [string]$Class_Name,
@@ -366,6 +370,7 @@ function Remove-OGWMIClass {
         1.0.0 - 2021-08-18 Function created
 #>
 function Get-OGWMIClass () {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory=$true)]
         [string]$Class_Name,
@@ -435,6 +440,7 @@ function Get-OGWMIClass () {
         1.0.0 - 2021-08-18 Function created
 #>
 function New-OGWMIInstance {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory=$true, HelpMessage = "The name of the Class to that the Instance will be reated in.")]
         [string]$Class_Name,

@@ -27,7 +27,7 @@
         1.0.0 - 2021-08-17 Function created
 #>
 Function Get-OGOSVersionNT {
-
+    [cmdletbinding()]
     $qOS = Get-WMIObject -Query "Select Version from Win32_OperatingSystem"
     ## Get the name of this function and write header
     $arrVersion = ($qOS.Version).Split(".")
@@ -70,6 +70,7 @@ Function Get-OGOSVersionNT {
         1.0.0 - 2021-08-17 Function created
 #>
 Function Get-OGMSOfficeActiveProcesses {
+    [cmdletbinding()]
     $ActiveProcesses = Get-Process | Where-Object { (($_.path -like "*\Microsoft Office\*")`
                 -or ($_.ProcessName -like "*lync*")`
                 -or ($_.ProcessName -like "*Outlook*")`
@@ -119,6 +120,7 @@ Function Get-OGMSOfficeActiveProcesses {
         1.0.0 - 2021-08-24 Function created
 #>
 function Get-OGTempStorage(){
+    [cmdletbinding()]
     param (
         [switch]$File,
         [switch]$Folder
@@ -184,6 +186,7 @@ function Get-OGTempStorage(){
     1.0.0 - (2020-30-07) Function created
     #>
 function Get-OGFileCertificate {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -247,6 +250,7 @@ function Get-OGFileCertificate {
     1.0.0 - (2020-30-07) Function created
 #>
 function Invoke-OGImportCertificate (){
+    [cmdletbinding()]
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -298,6 +302,7 @@ An example
 General notes
 #>
 function Invoke-OGRemoveCertificate {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -355,6 +360,7 @@ function Invoke-OGRemoveCertificate {
     1.0.0 - (2020-30-07) Function created
 #>
 function Get-OGDriveMostFree {
+    [cmdletbinding()]
     #Get Largest internal Drive
     $LogicalDrives = Get-WmiObject -Class Win32_logicaldisk -Filter "DriveType = '3'"
     $max = ($LogicalDrives | measure-object -Property FreeSpace -maximum).maximum
@@ -392,7 +398,8 @@ function Get-OGDriveMostFree {
     Version history:
     1.0.0 - (2020-06-08) Module created
 #>
-function Start-OGSearchLogicalDrives {         
+function Start-OGSearchLogicalDrives {        
+    [cmdletbinding()] 
     param(
         [parameter(Mandatory = $true, HelpMessage = "My\Folder\Path") ]
         [ValidateNotNullOrEmpty()]
@@ -547,6 +554,7 @@ function Convert-OGFileSize {
     1.0.0 - 2021-08-11 Function created
 #>
 function Get-OGOoBFiles {
+    [cmdletbinding()]
     param(
         [string[]]$Search_Path = @("$($ENV:SystemDrive)\"),
         [string[]]$Exclude_Paths,
@@ -639,6 +647,7 @@ function Get-OGOoBFiles {
     1.0.0 - 2021-08-11 Function created
 #>
 function New-OGPWAApplications {
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $true, HelpMessage = 'Path to JSON ConfigFile')]
         [ValidateNotNullOrEmpty()]
@@ -786,6 +795,7 @@ File type set to:
     1.0.0 - (2020-30-07) Function created
 #>
 function New-OGShortcut {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -859,6 +869,7 @@ function New-OGShortcut {
     1.0.0 - 2021-08-17 Script created
 #>
 Function Get-OGWin7ScheduledTask {
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $true, HelpMessage = 'Name of Task to search for.')]
         [ValidateNotNullOrEmpty()]
@@ -895,6 +906,7 @@ Function Get-OGWin7ScheduledTask {
     1.0.0 - 2021-08-17 Script created
 #>
 Function Stop-OGScheduledTask {
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $true, HelpMessage = 'Name of Scheduled Task to stop')]
         [ValidateNotNullOrEmpty()]
@@ -941,6 +953,7 @@ Function Stop-OGScheduledTask {
     1.0.0 - 2021-08-17 Script created
 #>
 Function Start-OGScheduledTask {
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $true, HelpMessage = 'Name of Scheduled Task to Start')]
         [ValidateNotNullOrEmpty()]
@@ -988,6 +1001,7 @@ Function Start-OGScheduledTask {
     1.0.0 - 2021-08-17 Script created
 #>
 Function Remove-OGScheduledTask {
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $true, HelpMessage = 'Name of Scheduled Task to Start')]
         [ValidateNotNullOrEmpty()]
@@ -1050,6 +1064,7 @@ Function Remove-OGScheduledTask {
     1.0.0 - (2020-30-07) Module created
 #>
 function Start-OGSleeper ($seconds) {
+    [cmdletbinding()]
     $doneDT = (Get-Date).AddSeconds($seconds)
     Write-OGLogEntry -logText "Sleeping for $($seconds) seconds:"
     while ($doneDT -gt (Get-Date)) {
@@ -1061,7 +1076,7 @@ function Start-OGSleeper ($seconds) {
         [System.Threading.Thread]::Sleep(500)
     }
     Write-Progress -Activity "Sleeping" -Status "Sleeping..." -SecondsRemaining 0 -Completed
-    Write-OGLogEntry -logText " Complete"
+    Write-OGLogEntry -logText "Complete"
 }
 
 <#
@@ -1151,6 +1166,7 @@ function Get-OGUDVariables {
 
 #>
 Function Test-OGServiceExists{
+    [cmdletbinding()]
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -1191,6 +1207,7 @@ Function Test-OGServiceExists{
 
 #>
 Function Remove-OGService () {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]

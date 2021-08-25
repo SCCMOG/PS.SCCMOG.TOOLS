@@ -1,4 +1,5 @@
 function saveRepo {
+    [cmdletbinding()]
     param(
         [Parameter(Mandatory = $false)]
         [string]$Owner = "SCCMOG" ,

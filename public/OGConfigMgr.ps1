@@ -33,6 +33,7 @@ If specified will force remove any Hardware Inventory Data on the machine and re
     1.0.0 - (2020-30-07) Function created
 #>
 function Invoke-OGHWInventory {
+    [cmdletbinding()]
     param(
         [parameter(Mandatory = $false)]
         [ValidateNotNullOrEmpty()]
