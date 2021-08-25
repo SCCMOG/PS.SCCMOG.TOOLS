@@ -67,7 +67,7 @@ function checkDefaultLogDir(){
             $setACL = $true
         }
         else{
-            Write-Warning "Global log directory found but script not running as Admin. Will skip setting full control to all users."
+            Write-Warning "Global log directory: '$($global:PS_NEWOGLogEntry_DEFAULT_LOGDIR)' found but script not running as Admin. Will skip setting full control to all users for directory recursively."
         }
         if($setACL){
             #Set Full Control for Built in Users Group
