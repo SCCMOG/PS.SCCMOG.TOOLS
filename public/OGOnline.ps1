@@ -73,9 +73,9 @@ Function Get-OGRecursiveAADGroupMemberUsers{
 }
 
 
-<#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
-    "Convert-OGFileSize"
+    "Get-OGRecursiveAADGroupMemberUsers"
 )
 
 foreach ($module in $Export){
