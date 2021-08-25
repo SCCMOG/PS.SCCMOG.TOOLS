@@ -47,10 +47,12 @@ Function Get-OGRecursiveAADGroupMemberUsers{
     [cmdletbinding()]
     param(
         [parameter(Mandatory=$True,ValueFromPipeline=$true)]
-        $AzureGroupName
+        $AzureGroupName,
+        [parameter(DontShow)]
+        [hashtable]$stack
     )
     Begin{
-        $stack = @()
+        if (!$rGroupNAme){$stack = @()}
         try{
             Get-AzureADCurrentSessionInfo -ErrorAction SilentlyContinue
         }
@@ -74,7 +76,7 @@ Function Get-OGRecursiveAADGroupMemberUsers{
                 $Members = Get-AzureADGroupMember -ObjectId $AzureGroup.ObjectId -All $true -ErrorAction Stop
                 $UserMembers = $Members | Where-Object{$_.ObjectType -eq 'User'}
                 If($Members | Where-Object{$_.ObjectType -eq 'Group'}){
-                    $UserMembers += $Members | Where-Object{$_.ObjectType -eq 'Group'} | ForEach-Object{ Get-OGRecursiveAADGroupMemberUsers -AzureGroupName $_.DisplayName}
+                    $UserMembers += $Members | Where-Object{$_.ObjectType -eq 'Group'} | ForEach-Object{ Get-OGRecursiveAADGroupMemberUsers -AzureGroupName $_.DisplayName -stack $stack}
                 }
                 Write-OGLogEntry "Total User count for: '$($logText)' Count: $($UserMembers.Count)"
             }
