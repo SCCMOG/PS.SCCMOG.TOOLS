@@ -4,6 +4,61 @@
 
 <#
 .SYNOPSIS
+    Connects to ConfigMgr Powershell Drive.
+.DESCRIPTION
+    Connects to ConfigMgr Powershell Drive.
+.EXAMPLE
+    PS C:\> Connect-ConfigMgr -SiteCode "CLV" -ProviderMachineName "SCCM-SJC1.mm-ads.com"
+    Connects to the ConfigMgr Site with Code: CLV using the SiteServer SCCM-SJC1.mm-ads.com
+.PARAMETER SiteCode
+    SiteCode to connect to.
+.PARAMETER ProviderMachineName
+    Primary or CAS to use to connect to the SiteCode.
+.PARAMETER initParams
+    Hashtable of initialising parameters.
+.NOTES
+    Name:       Connect-ConfigMgr       
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2020-08-25
+    Updated:    -
+    
+    Version history:
+    1.0.0 - 2020-08-25 Function created
+#>
+Connect-ConfigMgr{
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory=$true,HelpMessage="Site code for site to connect to.")]
+        [string]$SiteCode,
+        [Parameter(Mandatory=$true,HelpMessage="FQDN of site server to connect to.")]
+        [string]$ProviderMachineName,
+        [Parameter(Mandatory=$false,HelpMessage="Hashtable of parameters for initialisation.")]
+        [hashtable]$initParams
+    )
+    Write-OGLogEntry "Attempting to import the ConfigMgr Module. SiteCode: $($SiteCode) ProviderMachineName: $($ProviderMachineName)"
+    try{
+        if((Get-Module ConfigurationManager) -eq $null) {
+            Import-Module "$($ENV:SMS_ADMIN_UI_PATH)\..\ConfigurationManager.psd1" @initParams 
+        }
+        if((Get-PSDrive -Name $SiteCode -PSProvider CMSite -ErrorAction SilentlyContinue) -eq $null) {
+            New-PSDrive -Name $SiteCode -PSProvider CMSite -Root $ProviderMachineName @initParams
+        }
+        Set-Location "$($SiteCode):\" @initParams
+        Write-OGLogEntry "Success importing the ConfigMgr Module. SiteCode: $($SiteCode) ProviderMachineName: $($ProviderMachineName)"
+        return $true
+    }
+    catch{
+        $message = "Failed importing the ConfigMgr Module. SiteCode: $($SiteCode) ProviderMachineName: $($ProviderMachineName). Error: $_"
+        Write-OGLogEntry $message -logtype Error
+        Throw $message
+    }    
+}
+
+<#
+.SYNOPSIS
     Invoke a Hardware Inventory from the SCCM/MEMCM Client on the machine
 
 .DESCRIPTION

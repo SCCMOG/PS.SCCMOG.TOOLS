@@ -55,6 +55,7 @@ Function Get-OGRecursiveAADGroupMemberUsers{
         }
         catch{
             try{
+                Write-Warning "Connect to Azure AD."
                 Connect-AzureAD -ErrorAction Stop
             }
             catch{
@@ -63,19 +64,28 @@ Function Get-OGRecursiveAADGroupMemberUsers{
         }
     }
     Process {
-        $AzureGroup = Get-AzureADGroup -SearchString "$AzureGroupName" -ErrorAction Stop
-        if($AzureGroup){
-            Write-Verbose -Message "Enumerating $($AzureGroup.DisplayName)"
-            $Members = Get-AzureADGroupMember -ObjectId $AzureGroup.ObjectId -All $true -ErrorAction Stop
-            $UserMembers = $Members | Where-Object{$_.ObjectType -eq 'User'}
-            If($Members | Where-Object{$_.ObjectType -eq 'Group'}){
-                $UserMembers += $Members | Where-Object{$_.ObjectType -eq 'Group'} | ForEach-Object{ Get-OGRecursiveAADGroupMemberUsers -AzureGroupName $_.DisplayName}
+        try{
+            $AzureGroup = Get-AzureADGroup -SearchString "$AzureGroupName" -ErrorAction Stop
+            if($AzureGroup){
+                Write-OGLogEntry "Enumerating: '$($AzureGroup.DisplayName)'"
+                $Members = Get-AzureADGroupMember -ObjectId $AzureGroup.ObjectId -All $true -ErrorAction Stop
+                $UserMembers = $Members | Where-Object{$_.ObjectType -eq 'User'}
+                If($Members | Where-Object{$_.ObjectType -eq 'Group'}){
+                    $UserMembers += $Members | Where-Object{$_.ObjectType -eq 'Group'} | ForEach-Object{ Get-OGRecursiveAADGroupMemberUsers -AzureGroupName $_.DisplayName}
+                }
+                Write-OGLogEntry "Total User count for: '$($AzureGroup.DisplayName)' Count: $($UserMembers.Count)"
             }
+            else{
+                $message = "No AAD group found with name: '$($AzureGroupName)'"
+                Write-OGLogEntry $message -logtype Error
+                Throw $message
+            }    
         }
-        else{
-            throw "No AAD group found with name: '$($AzureGroupName)'"
+        catch{
+            $message = "Failed during enumeration of AAD group: '$($AzureGroupName)'. Error: $_"
+            Write-OGLogEntry $message -logtype Error
+            Throw $message
         }
-
     }
     end {
         Return $UserMembers
