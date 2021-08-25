@@ -57,12 +57,19 @@ function getNewFileName () {
 }
 
 function checkDefaultLogDir(){
+    $setACL = $false
     try{
         if (!(Test-Path -Path "$global:PS_NEWOGLogEntry_DEFAULT_LOGDIR" -PathType Container)){
-            New-Item -Path "$($ENV:ProgramData)" -Name "Logs" -ItemType Directory -Force | Out-Null 
-        }
-        if (Test-Path -Path "$global:PS_NEWOGLogEntry_DEFAULT_LOGDIR" -PathType Container){
             New-Item -Path "$($ENV:ProgramData)" -Name "Logs" -ItemType Directory -Force | Out-Null
+            $setACL = $true
+        }
+        elseif ((Test-Path -Path "$global:PS_NEWOGLogEntry_DEFAULT_LOGDIR" -PathType Container)-and(checkAdminRights)){
+            $setACL = $true
+        }
+        else{
+            Write-Warning "Global log directory found but script not running as Admin. Will skip setting full control to all users."
+        }
+        if($setACL){
             #Set Full Control for Built in Users Group
             $BuiltinUsersSID = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-545'
             $BuiltinUsersGroup = $BuiltinUsersSID.Translate([System.Security.Principal.NTAccount])
@@ -76,10 +83,12 @@ function checkDefaultLogDir(){
             $ACL | Set-Acl $global:PS_NEWOGLogEntry_DEFAULT_LOGDIR
             return $true
         }
+        else {
+            return $true
+        }
     }
     catch{
-        Write-Error "Failed configuring defualt log folder. Error: $_"
-        break
+        Throw "Failed configuring defualt log folder. Error: $_"
     }
 }
 
@@ -207,7 +216,8 @@ function writeEventLog {
     }
     Write-EventLog -LogName "$($eventLog)" -Source "$($EventSource)" -Category $Catagory -EventId $sMessageID -Message "$($message)" -EntryType $sMessageType -RawData 10,20
 }
-#Remove-EventLog -LogName "Clarivate Deployment"
+
+
 function newEventLog{
     param(
         [Parameter(Mandatory = $true)]
