@@ -51,10 +51,15 @@ Function Get-OGRecursiveAADGroupMemberUsers{
     )
     Begin{
         try{
-            Get-AzureADCurrentSessionInfo
+            Get-AzureADCurrentSessionInfo -ErrorAction SilentlyContinue
         }
         catch{
-            Connect-AzureAD
+            try{
+                Connect-AzureAD -ErrorAction Stop
+            }
+            catch{
+                Throw "Failed to connect to Azure AD. Error: $_"
+            }
         }
     }
     Process {
