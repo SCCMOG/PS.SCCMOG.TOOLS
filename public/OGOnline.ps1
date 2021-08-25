@@ -49,10 +49,10 @@ Function Get-OGRecursiveAADGroupMemberUsers{
         [parameter(Mandatory=$True,ValueFromPipeline=$true)]
         $AzureGroupName,
         [parameter(DontShow)]
-        [hashtable]$stack
+        $stack
     )
     Begin{
-        if (!$rGroupNAme){$stack = @()}
+        if (!($stack)){$stack = @()}
         try{
             Get-AzureADCurrentSessionInfo -ErrorAction SilentlyContinue
         }
