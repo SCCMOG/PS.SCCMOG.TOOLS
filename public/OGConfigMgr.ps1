@@ -28,7 +28,7 @@
     Version history:
     1.0.0 - 2020-08-25 Function created
 #>
-Connect-ConfigMgr{
+function Connect-ConfigMgr(){
     [cmdletbinding()]
     param(
         [Parameter(Mandatory=$true,HelpMessage="Site code for site to connect to.")]
@@ -116,6 +116,6 @@ $Export = @(
     "Connect-ConfigMgr"
 )
 
-foreach ($module in $Export){
-    Export-ModuleMember $module
+foreach ($function in $Export){
+    Export-ModuleMember $function
 }
