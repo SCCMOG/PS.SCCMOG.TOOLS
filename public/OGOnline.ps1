@@ -69,13 +69,14 @@ Function Get-OGRecursiveAADGroupMemberUsers{
             $AzureGroup = Get-AzureADGroup -SearchString "$AzureGroupName" -ErrorAction Stop
             $stack += $AzureGroupName
             if($AzureGroup){
-                Write-OGLogEntry "Enumerating: '$(($stack -join " | "))'"
+                $logText = $stack -join " | "
+                Write-OGLogEntry "Enumerating: '$($logText)'"
                 $Members = Get-AzureADGroupMember -ObjectId $AzureGroup.ObjectId -All $true -ErrorAction Stop
                 $UserMembers = $Members | Where-Object{$_.ObjectType -eq 'User'}
                 If($Members | Where-Object{$_.ObjectType -eq 'Group'}){
-                    $UserMembers += $Members | Where-Object{$_.ObjectType -eq 'Group'} | ForEach-Object{ $stack += "$($_.DisplayName)"; Get-OGRecursiveAADGroupMemberUsers -AzureGroupName $_.DisplayName}
+                    $UserMembers += $Members | Where-Object{$_.ObjectType -eq 'Group'} | ForEach-Object{ Get-OGRecursiveAADGroupMemberUsers -AzureGroupName $_.DisplayName}
                 }
-                Write-OGLogEntry "Total User count for: '$($AzureGroup.DisplayName)' Count: $($UserMembers.Count)"
+                Write-OGLogEntry "Total User count for: '$($logText)' Count: $($UserMembers.Count)"
             }
             else{
                 $message = "No AAD group found with name: '$($AzureGroupName)'"
