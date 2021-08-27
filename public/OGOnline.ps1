@@ -20,14 +20,14 @@ function saveRepo {
 
 <#
 .SYNOPSIS
-    Short description
+    Gets all recursive members of the Azure group name supplied.
 .DESCRIPTION
-    Long description
+    Gets all recursive members of the Azure group name supplied.
 .EXAMPLE
     PS C:\> Get-OGRecursiveAADGroupMemberUsers -AzureGroupName "My Azure Group Name"
-    Gets all recursive members of the group name supplied.
+    Gets all recursive members of the Azure group name supplied.
 .PARAMETER AzureGroupName
-Parameter description
+    Name of the Azure group that you would like to get all recursive members for.
 .INPUTS
     Inputs (if any)
 .OUTPUTS
@@ -47,7 +47,7 @@ Function Get-OGRecursiveAADGroupMemberUsers{
     [cmdletbinding()]
     param(
         [parameter(Mandatory=$True,ValueFromPipeline=$true)]
-        $AzureGroupName,
+        [string]$AzureGroupName,
         [parameter(DontShow)]
         $stack
     )

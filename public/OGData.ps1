@@ -61,6 +61,7 @@ function Select-OGUnique {
         $Keys = @{}
     }
     process {
+        Write-OGLogEntry "Getting Unique objects from input object with current count: $($InputObject.Count)"
         $InputObject | foreach-object {
             $o = $_
             $k = $Property | foreach-object -begin {
