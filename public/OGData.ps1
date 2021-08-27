@@ -1,9 +1,12 @@
 
 <#
 .SYNOPSIS
-    Short description
+    Select Unique objects from an object.
 .DESCRIPTION
-    Long description
+    Many times – mainly when writing function cmdlets for other purposes – I find that I need to output all unique objects based on one or two properties but want all the objects’ properties returned.
+    PowerShell’s built-in Select-Object doesn’t let me do that. Apart from enumerating and collecting all objects before outputing them to the pipeline, it only return the properties that you specified.
+    To let all the objects flow through the pipeline as they are enumerating, I added my own Select-Unique cmdlet to my $profile a couple of years ago but wanted to share it now as a Gist.
+    https://lifeofheath.wordpress.com/2012/08/15/a-faster-way-to-output-unique-objects-in-powershell/
 .EXAMPLE
     PS C:\> Select-Unique -Property Mail -InputObject $AADGroupMembers
     Gets all unique elements from the array based off the email property of an element and returns an array of all unique elements in the array.
