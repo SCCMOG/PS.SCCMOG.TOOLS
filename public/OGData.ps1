@@ -88,3 +88,13 @@ function Get-OGUnique(){
         }
     }
 }
+
+#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
+$Export = @(
+    "Get-OGUnique"
+)
+
+foreach ($module in $Export){
+    Export-ModuleMember $module
+}
+#>
