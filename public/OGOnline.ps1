@@ -1,22 +1,3 @@
-function saveRepo {
-    [cmdletbinding()]
-    param(
-        [Parameter(Mandatory = $false)]
-        [string]$Owner = "SCCMOG" ,
-        [Parameter(Mandatory = $false)]
-        [string]$Project = "PS.SCCMOG.TOOLS",
-        [Parameter(Mandatory = $false)]
-        [string]$Branch = "main",
-        [Parameter(Mandatory = $false)]
-        [string]$DownloadPath = "$(Split-Path $script:MyInvocation.MyCommand.Path)"
-    )
-    $url = "https://github.com/$Owner/$Project/archive/$Branch.zip"
-    $output = Join-Path $DownloadPath "$($Project)-$($Branch)_$(Get-Date -Format yyyyMMdd_HHmm).zip"
-    $wc = New-Object System.Net.WebClient;
-    $wc.DownloadFile($url, $output)
-    Expand-Archive -Path $output -DestinationPath $DownloadPath -Force
-    #[version]$convertedVersion = [regex]::matches($Version, "\s*ModuleVersion\s=\s'(\d*.\d*.\d*)'\s*").groups[1].value
-}
 
 <#
 .SYNOPSIS
@@ -98,7 +79,6 @@ Function Get-OGRecursiveAADGroupMemberUsers{
     }
 }
 
-
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
     "Get-OGRecursiveAADGroupMemberUsers"
@@ -107,4 +87,24 @@ $Export = @(
 foreach ($module in $Export){
     Export-ModuleMember $module
 }
-#>
+
+<#
+function saveRepo {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$Owner = "SCCMOG" ,
+        [Parameter(Mandatory = $false)]
+        [string]$Project = "PS.SCCMOG.TOOLS",
+        [Parameter(Mandatory = $false)]
+        [string]$Branch = "main",
+        [Parameter(Mandatory = $false)]
+        [string]$DownloadPath = "$(Split-Path $script:MyInvocation.MyCommand.Path)"
+    )
+    $url = "https://github.com/$Owner/$Project/archive/$Branch.zip"
+    $output = Join-Path $DownloadPath "$($Project)-$($Branch)_$(Get-Date -Format yyyyMMdd_HHmm).zip"
+    $wc = New-Object System.Net.WebClient;
+    $wc.DownloadFile($url, $output)
+    Expand-Archive -Path $output -DestinationPath $DownloadPath -Force
+    #[version]$convertedVersion = [regex]::matches($Version, "\s*ModuleVersion\s=\s'(\d*.\d*.\d*)'\s*").groups[1].value
+}#>
