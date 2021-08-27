@@ -32,7 +32,7 @@
 .OUTPUTS
     Output (if any)
 .NOTES
-    Name:       Get-OGUnique
+    Name:       Select-OGUnique
     Original:   https://lifeofheath.wordpress.com/2012/08/15/a-faster-way-to-output-unique-objects-in-powershell/
     Modded:     Richie Schuster - SCCMOG.com
     Website:    https://www.sccmog.com
@@ -44,49 +44,51 @@
         1.0.0 - 2012-08-12 Function created
         2.0.0 - 2021-08-27 Updated
 #>
-function Get-OGUnique(){
-    param(
+function Select-OGUnique {
+    [CmdletBinding()]
+    param
+    (
         [Parameter(Mandatory = $true, Position = 0)]
-        [string[]]$CompareProperty,
+        [string[]] $Property,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
         $InputObject,
         [Parameter()]
-        [switch]$AsHashtable,
+        [switch] $AsHashtable,
         [Parameter()]
-        [switch]$NoElement
+        [switch] $NoElement
     )
-    begin{
+    begin {
         $Keys = @{}
     }
-    process{
-        $InputObject | foreach-object{
+    process {
+        $InputObject | foreach-object {
             $o = $_
-            $k = $CompareProperty | foreach-object –begin{
+            $k = $Property | foreach-object -begin {
                 $s = ''
-            } 
-            –process {
+            } -process {
                 # Delimit multiple properties like group-object does.
-                if ($s.Length -gt 0) {
+                if ( $s.Length -gt 0 ) {
                     $s += ', '
                 }
+
                 $s += $o.$_ -as [string]
-            } 
-            –end{
+            } -end {
                 $s
             }
-            if (-not $Keys.ContainsKey($k)){
+
+            if ( -not $Keys.ContainsKey($k) ) {
                 $Keys.Add($k, $null)
-                if (-not $AsHashtable) {
+                if ( -not $AsHashtable ) {
                     $o
                 }
-                elseif (-not $NoElement){
+                elseif ( -not $NoElement ) {
                     $Keys[$k] = $o
                 }
             }
         }
     }
-    end{
-        if ($AsHashtable){
+    end {
+        if ( $AsHashtable ) {
             $Keys
         }
     }
@@ -94,7 +96,7 @@ function Get-OGUnique(){
 
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
-    "Get-OGUnique"
+    "Select-OGUnique"
 )
 
 foreach ($module in $Export){
