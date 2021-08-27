@@ -26,6 +26,7 @@ function saveRepo {
 .EXAMPLE
     PS C:\> Get-OGRecursiveAADGroupMemberUsers -AzureGroupName "My Azure Group Name"
     Gets all recursive members of the Azure group name supplied.
+    Parse returned data using Select-OGUnique function to get all unique objects :)
 .PARAMETER AzureGroupName
     Name of the Azure group that you would like to get all recursive members for.
 .INPUTS
