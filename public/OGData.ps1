@@ -92,6 +92,7 @@ function Select-OGUnique {
         if ( $AsHashtable ) {
             $Keys
         }
+        Write-OGLogEntry "InputObject Unique Count: $($Keys.Count) Property(s) used: $($Property)"
     }
 }
 
