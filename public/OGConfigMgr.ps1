@@ -4,6 +4,172 @@
 
 <#
 .SYNOPSIS
+Gets ConfigMgr SMS_InstalledSoftware Class and specific product if specified.
+
+.DESCRIPTION
+Gets ConfigMgr SMS_InstalledSoftware Class and specific product if specified.
+
+.PARAMETER productName
+If specified will return the WMI Instance of the Product Name if found to be in the SMS_InstalledSoftware
+
+.PARAMETER WildCard
+Places a wildcard * at the begining and end of the Product name.
+
+.EXAMPLE
+Get-OGSMSSoftwareList -productName "Adobe Acrobat DC"
+
+    Returns:
+
+    __SUPERCLASS               :
+    __DYNASTY                  : SMS_InstalledSoftware
+    __RELPATH                  : SMS_InstalledSoftware.SoftwareCode="{ac76ba86-1033-ffff-7760-0c0f074e4100}"
+    __PROPERTY_COUNT           : 28
+    __DERIVATION               : {}
+    __SERVER                   : THISISMYMACHINENAME
+    __NAMESPACE                : root\cimv2\sms
+    __PATH                     : \\THISISMYMACHINENAME\root\cimv2\sms:SMS_InstalledSoftware.SoftwareCode="{ac76ba86-1033-ffff-7760-0c0f074e4100}"
+    ARPDisplayName             : Adobe Acrobat DC
+    ChannelCode                : 
+    ChannelID                  :
+    CM_DSLID                   :
+    EvidenceSource             : BPXACAAAAXAAAACAXAAXAXXXX0
+    InstallDate                : 20210909000000.000000+***
+    InstallDirectoryValidation : 4
+    InstalledLocation          : C:\Program Files (x86)\Adobe\Acrobat DC\
+    InstallSource              : C:\Users\U6057906\Downloads\Acrobat_DC_Web_WWMUI\Adobe Acrobat\
+    InstallType                : 0
+    Language                   : 0
+    LocalPackage               : C:\Windows\Installer\1a7460f.msi
+    MPC                        :
+    OsComponent                : 0
+    PackageCode                : {B3F96825-BDC3-454C-9676-07B6DA02E9FC}
+    ProductID                  : 16
+    ProductName                : Adobe Acrobat DC
+    ProductVersion             : 21.005.20060
+    Publisher                  : Adobe Systems Incorporated
+    RegisteredUser             : sccmog@sccmog.com
+    ServicePack                :
+    SoftwareCode               : {ac76ba86-1033-ffff-7760-0c0f074e4100}
+    SoftwarePropertiesHash     : 9bd65b497146292f087323efe0beceb3c5ac4a19aaef657a19de612744fcb938
+    SoftwarePropertiesHashEx   : 15bb5f3f116adb1e806ec4966ed4fdc7ab51fabe519a23bd7f771636443c7b1b
+    UninstallString            : MsiExec.exe /I{AC76BA86-1033-FFFF-7760-0C0F074E4100}
+    UpgradeCode                :
+    VersionMajor               : 21
+    VersionMinor               : 5
+    PSComputerName             : THISISMYMACHINENAME
+
+.EXAMPLE
+Get-OGSMSSoftwareList -productName "Adobe Acrobat DC" -WildCard
+
+    Returns:
+
+    __SUPERCLASS               :
+    __DYNASTY                  : SMS_InstalledSoftware
+    __RELPATH                  : SMS_InstalledSoftware.SoftwareCode="{ac76ba86-1033-ffff-7760-0c0f074e4100}"
+    __PROPERTY_COUNT           : 28
+    __DERIVATION               : {}
+    __SERVER                   : THISISMYMACHINENAME
+    __NAMESPACE                : root\cimv2\sms
+    __PATH                     : \\THISISMYMACHINENAME\root\cimv2\sms:SMS_InstalledSoftware.SoftwareCode="{ac76ba86-1033-ffff-7760-0c0f074e4100}"
+    ARPDisplayName             : Adobe Acrobat DC
+    ChannelCode                : 
+    ChannelID                  :
+    CM_DSLID                   :
+    EvidenceSource             : BPXACAAAAXAAAACAXAAXAXXXX0
+    InstallDate                : 20210909000000.000000+***
+    InstallDirectoryValidation : 4
+    InstalledLocation          : C:\Program Files (x86)\Adobe\Acrobat DC\
+    InstallSource              : C:\Users\U6057906\Downloads\Acrobat_DC_Web_WWMUI\Adobe Acrobat\
+    InstallType                : 0
+    Language                   : 0
+    LocalPackage               : C:\Windows\Installer\1a7460f.msi
+    MPC                        :
+    OsComponent                : 0
+    PackageCode                : {B3F96825-BDC3-454C-9676-07B6DA02E9FC}
+    ProductID                  : 16
+    ProductName                : Adobe Acrobat DC
+    ProductVersion             : 21.005.20060
+    Publisher                  : Adobe Systems Incorporated
+    RegisteredUser             : sccmog@sccmog.com
+    ServicePack                :
+    SoftwareCode               : {ac76ba86-1033-ffff-7760-0c0f074e4100}
+    SoftwarePropertiesHash     : 9bd65b497146292f087323efe0beceb3c5ac4a19aaef657a19de612744fcb938
+    SoftwarePropertiesHashEx   : 15bb5f3f116adb1e806ec4966ed4fdc7ab51fabe519a23bd7f771636443c7b1b
+    UninstallString            : MsiExec.exe /I{AC76BA86-1033-FFFF-7760-0C0F074E4100}
+    UpgradeCode                :
+    VersionMajor               : 21
+    VersionMinor               : 5
+    PSComputerName             : THISISMYMACHINENAME
+
+.EXAMPLE
+Get-OGSMSSoftwareList
+
+This command returns the entire SMS_InstalledSoftware Class.
+
+.NOTES
+    Name:       Get-OGSMSSoftwareList       
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2020-09-09
+    Updated:    -
+    
+    Version history:
+    1.0.0 - 2020-09-09 Function created
+#>
+function Get-OGSMSSoftwareList (){
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$productName,
+        [Parameter(Mandatory = $false)]
+        [switch]$WildCard
+    )
+    if($WildCard){
+        $productName = "*$($productName)*"
+        Write-OGLogEntry "Wildcard Specified: '$($productName)'"
+    }
+    if (checkAdminRights){
+        #Get all installed software
+        try{
+            Write-OGLogEntry "Getting WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'."
+            $SMS_InstalledSoftware = Get-WmiObject -Namespace 'root\cimv2\sms' -Class SMS_InstalledSoftware
+            Write-OGLogEntry "Success getting WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'."
+        }
+        catch{
+            $message = "Failed to get WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'. Error: $_"
+            Write-OGLogEntry $message -logtype Error
+            throw $message
+        }
+        ## Check the matches
+        if ($productName){
+            Write-OGLogEntry "productName specified: '$($productName)'"
+            $productInfo = $SMS_InstalledSoftware | Where-Object { $_.ARPDisplayName -like "$($productName)" }
+            if ($productInfo){
+                Write-OGLogEntry "Found instance(s) for the product: '$($productName)' returning."
+                return $productInfo
+            }
+            Else{
+                Write-OGLogEntry "Did not find instance(s) for the product: '$($productName)' returning False." -logtype Warning
+                return $false
+            }
+        }
+        Else{
+            Write-OGLogEntry "No product specified returning complete class: SMS_InstalledSoftware." 
+            return $SMS_InstalledSoftware
+        }
+    }
+    else {
+        $message = "Failed to get WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'. User: '$([Security.Principal.WindowsIdentity]::GetCurrent())' does not have Administrator rights on: '$ENV:ComputerName'"
+        Write-OGLogEntry $message -logtype Error
+        throw $message
+    }
+}
+
+<#
+.SYNOPSIS
     Connects to ConfigMgr Powershell Drive.
 .DESCRIPTION
     Connects to ConfigMgr Powershell Drive.
@@ -113,7 +279,8 @@ function Invoke-OGHWInventory {
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
     "Invoke-OGHWInventory",
-    "Connect-ConfigMgr"
+    #"Connect-ConfigMgr",
+    "Get-OGSMSSoftwareList"
 )
 
 foreach ($function in $Export){
