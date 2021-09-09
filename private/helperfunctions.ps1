@@ -241,14 +241,14 @@ function newEventLog{
     }
     Else{
         try{
-            $SourceName
+            #$SourceName
             New-EventLog -LogName "$($LogName)" -Source $EventSources -Verbose
         }
         catch{
             Write-Error "Failed to create the Event Log: $($LogName). $_"
         }
         try{
-            writeEventLog -eventLog "$($LogName)" -EventSource "$($ConfigEventSource)" -messageType "Info" -message "Event Log: '$($LogName)' with sources: '$($EventSources)' has been created." 
+            writeEventLog -eventLog "$($LogName)" -EventSource "$($ConfigEventSource)" -messageType "Info" -message "Event Log: '$($LogName)' with sources: '$($EventSources -join " | ")' has been created." 
         }
         catch{
             Write-Error "Failed to write to Event Source:'$($ConfigEventSource)' for event log:'$($LogName)'. $_"
