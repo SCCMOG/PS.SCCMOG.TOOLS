@@ -13,7 +13,6 @@ $GitBranch = "main"
 
 #Import PS.SCCMOG.TOOLS
 try{
-    if ($Test-Path "$scriptRoot" -Path )
     if (Test-Path "$scriptRoot\$ModuleName" -PathType Container){
         Import-Module "$($scriptRoot)\$($ModuleName)\$($ModuleName).psd1" -Force -Verbose
     }
@@ -22,6 +21,7 @@ try{
         $DownloadPath = $scriptRoot
         $url = "https://github.com/$GitOwner/$ModuleName/archive/$GitBranch.zip"
         $output = Join-Path $DownloadPath "$($ModuleName).zip"
+        #Get-ChildItem -Path $($DownloadPath) -Filter "$($ModuleName)*" -Directory | Remove-Item -Recurse -Force
         $wc = New-Object System.Net.WebClient;
         $wc.DownloadFile($url, $output)
         $Expanded = Expand-Archive -Path $output -DestinationPath "$($DownloadPath)" -Force
