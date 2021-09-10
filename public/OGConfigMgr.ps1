@@ -145,11 +145,10 @@ function Get-OGSMSSoftwareList () {
             $productName = "*$($productName)*"
             Write-OGLogEntry "Wildcard Specified productName: '$($productName)'"
         }
-        if ($productName) {
+        if ($productPublisher) {
             $productPublisher = "*$($productPublisher)*"
             Write-OGLogEntry "Wildcard Specified productPublisher: '$($productPublisher)'"
         }
-        
     }
     if (checkAdminRights){
     #Get all installed software
