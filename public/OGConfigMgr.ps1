@@ -181,7 +181,7 @@ function Get-OGSMSSoftwareList () {
             return $productInfo
         }
         Else {
-            Write-OGLogEntry "Did not find instance(s) for the product: '$($productName)' returning False." -logtype Warning
+            Write-OGLogEntry "Did not find instance(s) for $(if($productName){"Product: '$($productName)' "})$(if($productPublisher){"Publisher: '$($productPublisher)' "})returning False." -logtype Warning
             return $false
         }
     }
