@@ -59,7 +59,7 @@ Get-OGSMSSoftwareList -productName "Adobe Acrobat DC"
     PSComputerName             : THISISMYMACHINENAME
 
 .EXAMPLE
-Get-OGSMSSoftwareList -productName "Adobe Acrobat DC" -WildCard
+Get-OGSMSSoftwareList -productName "Acrobat" -WildCard
 
     Returns:
 
@@ -102,6 +102,15 @@ Get-OGSMSSoftwareList -productName "Adobe Acrobat DC" -WildCard
     PSComputerName             : THISISMYMACHINENAME
 
 .EXAMPLE
+Get-OGSMSSoftwareList -productPublisher "Adobe" -WildCard
+
+.EXAMPLE
+Get-OGSMSSoftwareList -productPublisher "Adobe" -productName "Adobe Acrobat DC"
+
+.EXAMPLE
+Get-OGSMSSoftwareList -productPublisher "Adobe" -productName "Acrobat" -WildCard
+
+.EXAMPLE
 Get-OGSMSSoftwareList
 
 This command returns the entire SMS_InstalledSoftware Class.
@@ -113,57 +122,78 @@ This command returns the entire SMS_InstalledSoftware Class.
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2020-09-09
-    Updated:    -
+    Updated:    2020-09-10
     
     Version history:
     1.0.0 - 2020-09-09 Function created
+    1.1.0 - 2020-09-10 Function created  
 #>
-function Get-OGSMSSoftwareList (){
+function Get-OGSMSSoftwareList () {
     [cmdletbinding()]
     param(
         [Parameter(Mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [string]$productName,
         [Parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$productPublisher,
+        [Parameter(Mandatory = $false)]
         [switch]$WildCard
     )
-    if($WildCard){
-        $productName = "*$($productName)*"
-        Write-OGLogEntry "Wildcard Specified: '$($productName)'"
+    if ($WildCard) {
+        if ($productName) {
+            $productName = "*$($productName)*"
+            Write-OGLogEntry "Wildcard Specified productName: '$($productName)'"
+        }
+        if ($productName) {
+            $productPublisher = "*$($productPublisher)*"
+            Write-OGLogEntry "Wildcard Specified productPublisher: '$($productPublisher)'"
+        }
+        
     }
     if (checkAdminRights){
-        #Get all installed software
-        try{
-            Write-OGLogEntry "Getting WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'."
-            $SMS_InstalledSoftware = Get-WmiObject -Namespace 'root\cimv2\sms' -Class SMS_InstalledSoftware
-            Write-OGLogEntry "Success getting WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'."
-        }
-        catch{
-            $message = "Failed to get WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'. Error: $_"
-            Write-OGLogEntry $message -logtype Error
-            throw $message
-        }
-        ## Check the matches
-        if ($productName){
-            Write-OGLogEntry "productName specified: '$($productName)'"
+    #Get all installed software
+    try {
+        Write-OGLogEntry "Getting WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'."
+        $SMS_InstalledSoftware = Get-WmiObject -Namespace 'root\cimv2\sms' -Class SMS_InstalledSoftware
+        Write-OGLogEntry "Success getting WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'."
+    }
+    catch {
+        $message = "Failed to get WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'. Error: $_"
+        Write-OGLogEntry $message -logtype Error
+        throw $message
+    }
+    ## Check the matches
+    if (($productName)-or($productPublisher)){
+        if (($productName)-and(!($productPublisher))) {
+            Write-OGLogEntry "Searching for productName: '$($productName)'"
             $productInfo = $SMS_InstalledSoftware | Where-Object { $_.ARPDisplayName -like "$($productName)" }
-            if ($productInfo){
-                Write-OGLogEntry "Found instance(s) for the product: '$($productName)' returning."
-                return $productInfo
-            }
-            Else{
-                Write-OGLogEntry "Did not find instance(s) for the product: '$($productName)' returning False." -logtype Warning
-                return $false
-            }
         }
-        Else{
-            Write-OGLogEntry "No product specified returning complete class: SMS_InstalledSoftware." 
-            return $SMS_InstalledSoftware
+        elseif (($productPublisher)-and(!($productName))) {
+            Write-OGLogEntry "Searching for productPublisher: '$($productPublisher)'"
+            $productInfo = $SMS_InstalledSoftware | Where-Object { $_.Publisher -like "$($productPublisher)" }
         }
+        elseif (($productPublisher) -and ($productName)) {
+            Write-OGLogEntry "Searching for productName: '$($productName)' and productPublisher: '$($productPublisher)'"
+            $productInfo = $SMS_InstalledSoftware | Where-Object { (($_.ARPDisplayName -like "$($productName)")-and($_.Publisher -like "$($productPublisher)")) }
+        }
+        if ($productInfo) {
+            Write-OGLogEntry "Found instance(s) for the product returning."
+            return $productInfo
+        }
+        Else {
+            Write-OGLogEntry "Did not find instance(s) for the product: '$($productName)' returning False." -logtype Warning
+            return $false
+        }
+    }
+    Else {
+        Write-OGLogEntry "No product specified returning complete class: SMS_InstalledSoftware." 
+        return $SMS_InstalledSoftware
+    }
     }
     else {
         $message = "Failed to get WMI Class: 'SMS_InstalledSoftware' from NameSpace: 'root\cimv2\sms'. User: '$([Security.Principal.WindowsIdentity]::GetCurrent())' does not have Administrator rights on: '$ENV:ComputerName'"
-        Write-OGLogEntry $message -logtype Error
+        #Write-OGLogEntry $message -logtype Error
         throw $message
     }
 }
