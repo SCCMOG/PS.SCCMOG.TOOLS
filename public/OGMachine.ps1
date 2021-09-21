@@ -884,7 +884,7 @@ function Wait-OGProcessClose {
         [String]$Process,
         [parameter(Mandatory = $false)]
         [int]$MaxWaitTime = 60
-        )
+    )
     $count = 0
     Do {
         $status = Get-Process | Where-Object { $_.Name -like "$process" }
