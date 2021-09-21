@@ -1400,7 +1400,9 @@ $Export = @(
     "Start-OGSearchLogicalDrives",
     "Start-OGSleeper",
     "Stop-OGScheduledTask",
-    "Test-OGServiceExists"
+    "Test-OGServiceExists",
+    "Wait-OGProcessClose",
+    "Wait-OGProcessStart"
 )
 
 foreach ($module in $Export){
