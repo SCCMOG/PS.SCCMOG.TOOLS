@@ -885,11 +885,13 @@ function Wait-OGProcessClose {
         [parameter(Mandatory = $false)]
         [int]$MaxWaitTime = 60
     )
+    $RemainingTime = $MaxWaitTime
     $count = 0
     Do {
         $status = Get-Process | Where-Object { $_.Name -like "$process" }
         If ($status) {
-            Write-OGLogEntry "Waiting for process: '$($Process)' with PID: $($status.id) to close." ; 
+            $RemainingTime--
+            Write-OGLogEntry "Waiting for process: '$($Process)' with PID: $($status.id) to close. Wait time remaining: $($RemainingTime)s" ; 
             $closed = $false
             Start-Sleep -Seconds 1
             $count++
@@ -898,7 +900,7 @@ function Wait-OGProcessClose {
             $closed = $true 
         }
     }
-    Until (( $closed ) -or ( $count -eq $maxRetry ))
+    Until (( $closed ) -or ( $count -eq $MaxWaitTime ))
     if (($closed)-and($count -eq 0)){
         Write-OGLogEntry "Process: '$($Process)' was not found to be running."
         return $true
@@ -955,11 +957,13 @@ function Wait-OGProcessStart {
         [parameter(Mandatory = $false)]
         [int]$MaxWaitTime = 60
         )
+    $RemainingTime = $MaxWaitTime
     $count = 0
     Do {
         $status = Get-Process | Where-Object { $_.Name -like "$process" }
         If (!($status)) {
-            Write-OGLogEntry "Waiting for process: $($Process) to start." ; 
+            $RemainingTime--
+            Write-OGLogEntry "Waiting for process: $($Process) to start. Wait time remaining: $($RemainingTime)s" ; 
             $started = $false
             Start-Sleep -Seconds 1
             $count++
@@ -968,7 +972,7 @@ function Wait-OGProcessStart {
             $started = $true 
         }
     }
-    Until (( $started ) -or ( $count -eq $maxRetry ))
+    Until (( $started ) -or ( $count -eq $MaxWaitTime ))
     if (($started)-and($count -eq 0)){
         Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) was found to be already running."
         return $true
