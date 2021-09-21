@@ -495,7 +495,8 @@ namespace Runasuser
 
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
-    "Get-OGLoggedOnUser"
+    "Get-OGLoggedOnUser",
+    "Invoke-OGStartProcessAsCurrentUser"
 )
 
 foreach ($module in $Export){
