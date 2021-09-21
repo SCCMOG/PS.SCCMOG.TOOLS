@@ -840,6 +840,153 @@ function New-OGShortcut {
 ##################################################################################################################################
 ##################################################################################################################################
 ##################################################################################################################################
+# Process Region
+##################################################################################################################################
+
+<#
+.SYNOPSIS
+Wait for a process to close
+
+.DESCRIPTION
+This function waits for a process to close. IF the process is not found at runtime it will consider it closed and report so.
+
+.PARAMETER Process
+Name of process to wait for.
+
+.PARAMETER MaxWaitTime
+How long to wait for the process. Default is 60 seconds.
+
+.EXAMPLE
+Wait-OGProcessClose -Process Notepad
+Wait for the process Notepad to close with a default MaxWaitTime of 60s
+
+.EXAMPLE
+Wait-OGProcessClose -Process Notepad -MaxWaitTime 10
+Wait for the process Notepad to close with a MaxWaitTime of 10s
+
+.NOTES
+    Name:       Wait-OGProcessClose       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-09-21
+    Updated:    -
+    
+    Version history:
+    1.0.0 - 2021-09-21 Function created
+#>
+function Wait-OGProcessClose {
+    [cmdletbinding()]
+    param(
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Process,
+        [parameter(Mandatory = $false)]
+        [int]$MaxWaitTime = 60
+        )
+    $count = 0
+    Do {
+        $status = Get-Process | Where-Object { $_.Name -like "$process" }
+        If ($status) {
+            Write-OGLogEntry "Waiting for process: '$($Process)' with PID: $($status.id) to close." ; 
+            $closed = $false
+            Start-Sleep -Seconds 1
+            $count++
+        }        
+        Else { 
+            $closed = $true 
+        }
+    }
+    Until (( $closed ) -or ( $count -eq $maxRetry ))
+    if (($closed)-and($count -eq 0)){
+        Write-OGLogEntry "Process: '$($Process)' was not found to be running."
+        return $true
+    }
+    elseif (($closed)-and($count -gt 0)){
+        Write-OGLogEntry "Process: '$($Process)' has closed."
+        return $true
+    }
+    else{
+        Write-OGLogEntry "MaxWaitTime: $($MaxWaitTime) reached waiting for process: '$($Process)' with PID: $($status.id) to close." ;
+        return $false
+    }
+}
+
+<#
+.SYNOPSIS
+Wait for a process to start
+
+.DESCRIPTION
+This function waits for a process to start. IF the process is found at runtime it will consider it started and report so.
+
+.PARAMETER Process
+Name of process to wait for.
+
+.PARAMETER MaxWaitTime
+How long to wait for the process. Default is 60 seconds.
+
+.EXAMPLE
+Wait-OGProcessStart -Process Notepad
+Wait for the process Notepad to start with a default MaxWaitTime of 60s
+
+.EXAMPLE
+Wait-OGProcessStart -Process Notepad -MaxWaitTime 10
+Wait for the process Notepad to start with a MaxWaitTime of 10s
+
+.NOTES
+    Name:       Wait-OGProcessStart       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-09-21
+    Updated:    -
+    
+    Version history:
+    1.0.0 - 2021-09-21 Function created
+#>
+function Wait-OGProcessStart {
+    [cmdletbinding()]
+    param(
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Process,
+        [parameter(Mandatory = $false)]
+        [int]$MaxWaitTime = 60
+        )
+    $count = 0
+    Do {
+        $status = Get-Process | Where-Object { $_.Name -like "$process" }
+        If (!($status)) {
+            Write-OGLogEntry "Waiting for process: $($Process) to start." ; 
+            $started = $false
+            Start-Sleep -Seconds 1
+            $count++
+        }        
+        Else { 
+            $started = $true 
+        }
+    }
+    Until (( $started ) -or ( $count -eq $maxRetry ))
+    if (($started)-and($count -eq 0)){
+        Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) was found to be already running."
+        return $true
+    }
+    elseif (($started)-and($count -gt 0)){
+        Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) has started."
+        return $true
+    }
+    else{
+        Write-OGLogEntry "MaxWaitTime: $($MaxWaitTime) reached waiting for process: $($Process) to start." ;
+        return $false
+    }
+}
+##################################################################################################################################
+# END Process Region
+##################################################################################################################################
+##################################################################################################################################
+##################################################################################################################################
 #  Scheduled Task Region
 ##################################################################################################################################
 
