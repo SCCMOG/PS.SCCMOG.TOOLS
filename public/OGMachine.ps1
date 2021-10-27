@@ -1135,6 +1135,9 @@ Name of process to wait for.
 .PARAMETER MaxWaitTime
 How long to wait for the process. Default is 60 seconds.
 
+.PARAMETER Kill
+If the process is found within the time period forcefully stop it.
+
 .EXAMPLE
 Wait-OGProcessStart -Process Notepad
 Wait for the process Notepad to start with a default MaxWaitTime of 60s
@@ -1162,8 +1165,10 @@ function Wait-OGProcessStart {
         [ValidateNotNullOrEmpty()]
         [String]$Process,
         [parameter(Mandatory = $false)]
-        [int]$MaxWaitTime = 60
-        )
+        [int]$MaxWaitTime = 60,
+        [parameter(Mandatory = $false)]
+        [switch]$Kill
+    )
     $RemainingTime = $MaxWaitTime
     $count = 0
     Do {
@@ -1182,10 +1187,18 @@ function Wait-OGProcessStart {
     Until (( $started ) -or ( $count -eq $MaxWaitTime ))
     if (($started)-and($count -eq 0)){
         Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) was found to be already running."
+        if ($kill){
+            Write-OGLogEntry "Kill switch set attempting to close: '$($Process)' with PID: $($status.id)"
+            Stop-Process -InputObject $status -Force 
+        }
         return $true
     }
     elseif (($started)-and($count -gt 0)){
         Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) has started."
+        if ($kill){
+            Write-OGLogEntry "Kill switch set attempting to close: '$($Process)' with PID: $($status.id)"
+            Stop-Process -InputObject $status -Force
+        }
         return $true
     }
     else{
