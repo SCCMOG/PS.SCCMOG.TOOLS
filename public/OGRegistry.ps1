@@ -311,7 +311,7 @@ Function Test-OGRegistryKeyItem {
     try {
         if (Test-OGRegistryKey -RegKey $RegKey) {
             Write-OGLogEntry "Checking for Property: '$($Name)' at '$($RegKey)'"
-            Get-OGRegistryKeyProperties -RegKey $RegKey | Select-Object -ExpandProperty $Name -ErrorAction Stop | Out-Null
+            Get-OGRegistryKey -RegKey $RegKey | Select-Object -ExpandProperty $Name -ErrorAction Stop | Out-Null
             Write-OGLogEntry "Found Registry Key Item: '$($Name)' at '$($RegKey)'"
             return $true
         }
