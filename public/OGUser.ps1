@@ -161,10 +161,10 @@ function Get-OGLoggedOnUser{
 <#
 .SYNOPSIS
 Launches the specified file as the current logged on user if running from the 'NT AUTHORITY\SYSTEM' context.
-
+"Allow user to view and interact with the program installation" must be selected.
 .DESCRIPTION
 Launches the specified file as the current logged on user if running from the 'NT AUTHORITY\SYSTEM' context.
-
+"Allow user to view and interact with the program installation" must be selected.
 .PARAMETER FilePath
 File path to launch
 

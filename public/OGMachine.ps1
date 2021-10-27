@@ -835,6 +835,213 @@ function New-OGShortcut {
         [System.IO.File]::WriteAllBytes("$($FinalShortcutLocation)", $bytes)
     }
 }
+
+<#
+.SYNOPSIS
+Exports Get-Childitem result to CSV
+
+.DESCRIPTION
+Exports Get-Childitem result to CSV
+
+.PARAMETER Files
+Results of Get-Childitem
+
+.PARAMETER ExportName
+Name of csv to export
+
+.PARAMETER ExportPath
+Location to export CSV
+
+.EXAMPLE
+Export-OGFileDetailstoCSV -Files $GetChildItemResult -ExportName "MyCSV" -ExportPath "c:|my\folder\forcsvs"
+
+.NOTES
+    Name:       Export-OGFileDetailstoCSV 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2021-10-27 Function created
+#>
+function Export-OGFileDetailstoCSV {
+    param(
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [Object]$Files,
+        [parameter(Mandatory = $false)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ExportName,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ExportPath
+    )
+    if (Test-OGContainerPath -Path $ExportPath){
+        $List = New-Object System.Collections.Generic.List[System.Object]
+        foreach ($rootDir in $Files) {
+            if ($rootDir -notlike $null) {
+                foreach ($file in $rootDir) {
+                    $List.Add([PSCustomObject]@{
+                        Name          = $file.Name
+                        FullName      = $file.FullName
+                        Directory     = $file.Directory
+                        Size          = $file.Length
+                        CreationTime  = $file.CreationTime
+                        LastWriteTime = $file.LastWriteTime 
+                    })
+                }
+            }
+        }
+        try{
+            Write-OGLogEntry "Attempting to export data to CSV: '$($ExportPath)\$($ExportName).csv'"
+            $List | Export-Csv "$($ExportPath)\$($ExportName).csv" -NoClobber -NoTypeInformation -Force
+            Write-OGLogEntry "Success exporting data to CSV: '$($ExportPath)\$($ExportName).csv'"
+        }
+        catch{
+            $message = "Failed exporting data to CSV: '$($ExportPath)\$($ExportName).csv'. Error: $_"
+            Write-OGLogEntry $message -logtype error
+            throw $message
+        } 
+    }
+    else{
+        $message = "Path $($ExportPath) is not valid path."
+        Write-OGLogEntry $message -logtype error
+        throw $message
+    } 
+}
+
+<#
+.SYNOPSIS
+Check for container/directory
+
+.DESCRIPTION
+Check for container/directory
+
+.PARAMETER Path
+Path to container/directory
+
+.EXAMPLE
+Test-OGContainerPath -Path C:\admin
+
+.NOTES
+    Name:       Test-OGContainerPath 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2021-10-27 Function created
+#>
+Function Test-OGContainerPath {
+    param(
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path
+    )
+    Write-OGLogEntry "Checking for container at: '$($Path)'"
+    $Exists = Test-Path "$Path" -PathType Container -ErrorAction SilentlyContinue
+    If ($Exists) {
+        Write-OGLogEntry "Container found at: '$($Path)'"
+        Return $true
+    }
+    else {
+        Write-OGLogEntry "No container found at: '$($Path)'" -logtype Warning
+        Return $false
+    }
+}
+
+<#
+.SYNOPSIS
+Check for file
+
+.DESCRIPTION
+Check for file
+
+.PARAMETER Path
+Path to file to check for
+
+.EXAMPLE
+Test-OGFilePath -Path C:\windows\folder\myfile.txt
+
+.NOTES
+    Name:       Test-OGFilePath 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2021-10-27 Function created
+#>
+Function Test-OGFilePath {
+    param(
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path
+    )
+    Write-OGLogEntry "Checking for File at: '$($Path)'"
+    $Exists = Test-Path "$Path" -PathType Leaf -ErrorAction SilentlyContinue
+    If ($Exists) {
+        Write-OGLogEntry "File found at: '$($Path)'"
+        Return $true
+    }
+    else {
+        Write-OGLogEntry "No file found at: '$($Path)'" -logtype Warning
+        Return $false
+    }
+}
+
+<#
+.SYNOPSIS
+Create new container/directory
+
+.DESCRIPTION
+Create new container/directory
+
+.PARAMETER Path
+Path to create new container/directory
+
+.EXAMPLE
+New-OGContainer -Path c:\Admin\Richie
+
+.NOTES
+    Name:       New-OGContainer 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2021-10-27 Function created
+#>
+Function New-OGContainer {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path
+    )
+    Write-OGLogEntry "Creating Container: '$Path'"
+    try {
+        New-Item "$Path" -ItemType Directory -Force | Out-Null
+        $WasCreated = Test-OGContainerPath -Path $Path
+        Return $WasCreated
+    }
+    catch {
+        $message = "Failed creating registry key: '$Path'. Error: $_"
+        Write-OGLogEntry $message -logtype Error
+        throw $message
+    }
+}
 ##################################################################################################################################
 # END Files/Folder Region
 ##################################################################################################################################
@@ -1406,7 +1613,11 @@ $Export = @(
     "Stop-OGScheduledTask",
     "Test-OGServiceExists",
     "Wait-OGProcessClose",
-    "Wait-OGProcessStart"
+    "Wait-OGProcessStart",
+    "New-OGContainer",
+    "Test-OGFilePath",
+    "Test-OGContainerPath",
+    "Export-OGFileDetailstoCSV"
 )
 
 foreach ($module in $Export){

@@ -140,6 +140,256 @@ function Get-OGProductUninstallKey {
         return $false
     }
 }
+
+<#
+.SYNOPSIS
+Check if Registry Key Exists
+
+.DESCRIPTION
+Check if Registry Key Exists
+
+.PARAMETER RegKey
+RegKey to check for
+
+.EXAMPLE
+Test-OGRegistryKey -RegKey HKLM:\Software\SCCMOG
+
+.NOTES
+    Name:       Test-OGRegistryKey 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2021-10-27 Function created
+#>
+Function Test-OGRegistryKey {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RegKey
+    )
+    Write-OGLogEntry "Checking for RegKey: '$RegKey'"
+    $Exists = Get-Item -Path "$RegKey" -ErrorAction SilentlyContinue
+    If ($Exists) {
+        Write-OGLogEntry "Found RegKey: '$RegKey'"
+        Return $true
+    }
+    else {
+        Write-OGLogEntry "Did not find RegKey: '$RegKey'" -logtype Warning
+        Return $false
+    }
+}
+
+<#
+.SYNOPSIS
+Create Regkey
+
+.DESCRIPTION
+Create Regkey
+
+.PARAMETER RegKey
+RegKey to create
+
+.EXAMPLE
+New-OGRegistryKey -RegKey HKLM:\Software\SCCMOG
+
+.NOTES
+    Name:       New-OGRegistryKey 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2021-10-27 Function created
+#>
+Function New-OGRegistryKey {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RegKey
+    )
+    Write-OGLogEntry "Creating RegKey: '$RegKey'"
+    try {
+        New-Item "$RegKey" -ItemType Directory -Force | Out-Null
+        $WasCreated = Test-OGRegistryKey -RegKey $RegKey
+        Return $WasCreated
+    }
+    catch {
+        $message = "Failed creating registry key: '$RegKey'. Error: $_"
+        Write-OGLogEntry $message -logtype Error
+        throw $message
+    }
+}
+
+<#
+.SYNOPSIS
+Get the registry key properties and values
+
+.DESCRIPTION
+Get the registry key properties and values
+
+.PARAMETER RegKey
+RegKey to get
+
+.EXAMPLE
+Get-OGRegistryKey -RegKey HKLM:\Software\SCCMOG
+
+.NOTES
+    Name:       Get-OGRegistryKey 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2021-10-27 Function created
+#>
+Function Get-OGRegistryKey {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RegKey
+    )
+    $Exists = Test-OGRegistryKey -RegKey "$RegKey" -ErrorAction SilentlyContinue
+    If ($Exists) {
+        Write-OGLogEntry "Getting RegKey '$RegKey'"
+        $data = Get-ItemProperty -Path $RegKey
+        Return $data
+    }
+    else {
+        return $Exists
+    }
+}
+
+<#
+.SYNOPSIS
+Check for regkey item.
+
+.DESCRIPTION
+Check for regkey item.
+
+.PARAMETER RegKey
+Regkey to check for item.
+
+.PARAMETER Name
+Regkey Item to check for.
+
+.EXAMPLE
+Test-OGRegistryKeyItem -RegKey HKLM:\Software\SCCMOG -Name APM
+
+.NOTES
+    Name:       Test-OGRegistryKeyItem 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2021-10-27 Function created
+#>
+Function Test-OGRegistryKeyItem {
+    param (
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RegKey,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name
+    )
+    #Test-OGRegistryKeyItem -RegKey $AP_Migration_Key_Path -Name "OoB_Files_LastRun"
+    try {
+        if (Test-OGRegistryKey -RegKey $RegKey) {
+            Write-OGLogEntry "Checking for Property: '$($Name)' at '$($RegKey)'"
+            Get-OGRegistryKeyProperties -RegKey $RegKey | Select-Object -ExpandProperty $Name -ErrorAction Stop | Out-Null
+            Write-OGLogEntry "Found Registry Key Item: '$($Name)' at '$($RegKey)'"
+            return $true
+        }
+        else {
+            Return $false
+        }
+    }
+    catch {
+        Write-OGLogEntry "Did not find Registry Key Item: '$($Name)' at '$($RegKey)'" -logtype Warning
+        return $false
+    }
+} 
+
+<#
+.SYNOPSIS
+New Regkey Item
+
+.DESCRIPTION
+New Regkey Item
+
+.PARAMETER RegKey
+Regkey to create the new item
+
+.PARAMETER Name
+Name of the new item.
+
+.PARAMETER Value
+Value of the new item.
+
+.PARAMETER Type
+Tpye of the new item.
+
+.EXAMPLE
+New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "BackupRequired" -Value "False"
+
+.EXAMPLE
+New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "BackupComplete" -Value 0 -Type DWord
+
+.NOTES
+    Name:       New-OGRegistryKeyItem 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2021-10-27 Function created
+#>
+Function New-OGRegistryKeyItem {
+    param (
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RegKey,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Value,
+        [parameter(Mandatory = $false)]
+        [ValidateSet("String", "ExpandString", "Binary", "DWord", "MultiString", "Qword", "Unknown")]
+        [string]$Type = "String"
+    )
+    Write-OGLogEntry "Creating RegKey Item: '$($Name)' Value: '$($Value)' Type: '$($type)'"
+    try {
+        New-ItemProperty -Path "$RegKey" -Name $Name -Value $Value -PropertyType $Type -Force  | Out-Null
+        $WasCreated = Test-OGRegistryKeyItem -RegKey $RegKey -Name $Name
+        Return $WasCreated
+    }
+    catch {
+        $message = "Failed to create RegKey Item: '$($Name)' Value: '$($Value)' Type: '$($type)'. Error message: $_"
+        Write-OGLogEntry $message -logtype Error
+        throw $message
+    }
+}
+
 ##################################################################################################################################
 # End Get Registry Region
 ##################################################################################################################################
@@ -147,7 +397,11 @@ function Get-OGProductUninstallKey {
 
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
-    "Get-OGProductUninstallKey"
+    "Test-OGRegistryKey",
+    "New-OGRegistryKey",
+    "Get-OGRegistryKey",
+    "Test-OGRegistryKeyItem",
+    "New-OGRegistryKeyItem"
 )
 
 foreach ($module in $Export){
