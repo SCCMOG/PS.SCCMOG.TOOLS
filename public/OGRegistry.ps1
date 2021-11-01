@@ -305,7 +305,9 @@ Function Test-OGRegistryKeyItem {
         [string]$RegKey,
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string]$Name
+        [string]$Name,
+        [parameter(DontShow=$true)]
+        [switch]$NoLogging
     )
     #Test-OGRegistryKeyItem -RegKey $AP_Migration_Key_Path -Name "OoB_Files_LastRun"
     try {

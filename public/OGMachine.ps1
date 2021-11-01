@@ -870,8 +870,7 @@ Export-OGFileDetailstoCSV -Files $GetChildItemResult -ExportName "MyCSV" -Export
 function Export-OGFileDetailstoCSV {
     param(
         [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [Object]$Files,
+        [object]$Files,
         [parameter(Mandatory = $false)]
         [ValidateNotNullOrEmpty()]
         [string]$ExportName,
@@ -885,23 +884,25 @@ function Export-OGFileDetailstoCSV {
             if ($rootDir -notlike $null) {
                 foreach ($file in $rootDir) {
                     $List.Add([PSCustomObject]@{
-                        Name          = $file.Name
-                        FullName      = $file.FullName
-                        Directory     = $file.Directory
-                        Size          = $file.Length
-                        CreationTime  = $file.CreationTime
-                        LastWriteTime = $file.LastWriteTime 
-                    })
+                            Name          = $file.Name
+                            FullName      = $file.FullName
+                            Directory     = $file.Directory
+                            Size          = $file.Length
+                            CreationTime  = $file.CreationTime
+                            LastWriteTime = $file.LastWriteTime 
+                        })
                 }
             }
         }
         try{
-            Write-OGLogEntry "Attempting to export data to CSV: '$($ExportPath)\$($ExportName).csv'"
-            $List | Export-Csv "$($ExportPath)\$($ExportName).csv" -NoClobber -NoTypeInformation -Force
-            Write-OGLogEntry "Success exporting data to CSV: '$($ExportPath)\$($ExportName).csv'"
+            $CompletePath = "$($ExportPath)\$($ExportName).csv"
+            Write-OGLogEntry "Attempting to export data to CSV: '$($CompletePath)'"
+            $List | Export-Csv "$($CompletePath)" -NoClobber -NoTypeInformation -Force
+            Write-OGLogEntry "Success exporting data to CSV: '$($CompletePath)'"
+            return $($CompletePath)
         }
         catch{
-            $message = "Failed exporting data to CSV: '$($ExportPath)\$($ExportName).csv'. Error: $_"
+            $message = "Failed exporting data to CSV: '$($CompletePath)'. Error: $_"
             Write-OGLogEntry $message -logtype error
             throw $message
         } 
