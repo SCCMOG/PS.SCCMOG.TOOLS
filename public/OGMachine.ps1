@@ -641,12 +641,13 @@ function Get-OGOoBFiles {
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-11
-    Updated:    -
+    Updated:    2021-11-24
     
     Version history:
     1.0.0 - 2021-08-11 Function created
+    1.1.0 - 2021-11-24 Modified to use SCCMOG Module Functions
 #>
-function New-OGPWAApplications {
+function New-OGPWAApplications{
     [cmdletbinding()]
     param(
         [Parameter(Mandatory = $true, HelpMessage = 'Path to JSON ConfigFile')]
@@ -658,27 +659,29 @@ function New-OGPWAApplications {
         [Parameter(Mandatory = $false, HelpMessage = 'Path to ICON Source')]
         [String]$Icons
     )
-    if (Test-Path "$($ConfigFile)") {
+    #$Mode = "Install"
+    #$ConfigFile = "$($scriptRoot)\PWA_Applications.json"
+    #$Icons = "$($scriptRoot)\icons"
+    if (Test-OGFilePath "$($ConfigFile)") {
         $Config = Get-Content  "$($ConfigFile)" | ConvertFrom-Json
         $Arguments = $null
-        #$EdgePath = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
         $EdgeProxyPath = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge_proxy.exe"
         if (!(Test-Path $EdgeProxyPath)) {
-            Write-CMTLog -Value "Edge Proxy not found at: $($EdgeProxyPath)"
+            Write-OGLogEntry "Edge Proxy not found at: $($EdgeProxyPath)"
             return $false
         }
-        $ActiveUser = Get-LoggedOnUser -UniqueUserDomain INT 
+        $ActiveUser = Get-OGLoggedOnUser
         if ($ActiveUser) {
-            $PWAIcons = "$($ENV:systemdrive)\users\$($ActiveUser.Username)\AppData\Roaming\PWAIcons"
+            $PWAIcons = "$($ActiveUser.APPDATA)\PWAIcons"
             foreach ($item in $Config) {
-                $Sr = "$($ENV:systemdrive)\users\$($ActiveUser.Username)\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\"
+                $Sr = "$($ActiveUser.APPDATA)\Microsoft\Windows\Start Menu\Programs\"
                 $Scp = Join-Path -Path $Sr -ChildPath "$($item.Application).lnk"
-                switch ($ScriptMode) {
+                switch ($Mode) {
                     "Install" {
-                        Write-OGLogEntry -logText "Creating PWA: '$($item.Application)' created for: '$($ActiveUser.Username)'"
+                        Write-OGLogEntry -logText "Creating PWA: '$($item.Application)' for: '$($ActiveUser.Username)'"
                         try {
-                            if (Test-Path "$($Icons)\$($item.icon)") {
-                                if (!(Test-Path "$($PWAIcons)" -PathType Container)) {
+                            if (Test-OGFilePath "$($Icons)\$($item.icon)") {
+                                if (!(Test-OGContainerPath "$($PWAIcons)")) {
                                     New-Item -Path "$($PWAIcons)" -ItemType Directory -Force | Out-Null
                                 }
                                 Copy-Item -Path "$($Icons)\$($item.icon)" -Destination "$($PWAIcons)\$($item.icon)" -Force
@@ -695,7 +698,7 @@ function New-OGPWAApplications {
                         }
                         try {
                             # Create Start Menu Shortcut
-                            [string]$Arguments = "--profile-directory=`"$($item.Application)`" --app=`"$($item.Link)`" --no-first-run --no-default-browser-check "
+                            [string]$Arguments = "--profile-directory=`"$($item.ProfileDir)`" --app=`"$($item.Link)`" --no-first-run --no-default-browser-check "
                             $ws = New-Object -com WScript.Shell
                             $Sc = $ws.CreateShortcut($Scp)
                             $Sc.TargetPath = $EdgeProxyPath
@@ -709,25 +712,20 @@ function New-OGPWAApplications {
                             return $false
                         }
                         Write-OGLogEntry -logText "PWA: '$($item.Application)' created for: '$($ActiveUser.Username)' at: '$($Scp)'"
-                        return $true    
                     }
                     "Uninstall" {
                         try {
-                            if (Test-Path "$($Scp)") {
+                            if (Test-OGFilePath "$($Scp)") {
                                 Remove-Item -Path "$($Scp)" -Force
-                                return $true
                             }
                             else {
                                 Write-OGLogEntry -logText "Shortcut not found at: '$($Scp)' no need to clean."
-                                return $true
                             }
-                            if (Test-Path "$($PWAIcons)\$($item.icon)") {
+                            if (Test-OGFilePath "$($PWAIcons)\$($item.icon)") {
                                 Remove-Item -Path "$($PWAIcons)\$($item.icon)" -Force
-                                return $true
                             }
                             else {
                                 Write-OGLogEntry -logText "Shortcut icon not found for icon: '$($item.icon)' not found at: '$($PWAIcons)\$($item.icon)' no need to clean."
-                                return $true
                             }
                         }
                         catch [System.Exception] {
@@ -736,7 +734,6 @@ function New-OGPWAApplications {
                         }
                     }
                 }
-
             }
         }
         else {
@@ -834,6 +831,84 @@ function New-OGShortcut {
         $bytes[0x15] = $bytes[0x15] -bor 0x20 #set byte 21 (0x15) bit 6 (0x20) ON
         [System.IO.File]::WriteAllBytes("$($FinalShortcutLocation)", $bytes)
     }
+}
+
+<#
+.SYNOPSIS
+Creates a new Microsoft Edge Profile for the current active user.
+
+.DESCRIPTION
+Creates a new Microsoft Edge Profile for the current active user and adds a shortcut to it in their Start Menu.
+
+.PARAMETER Mode
+Install or uninstall the new edge profile
+
+.PARAMETER ProfileName
+Name of the Profile to create
+
+.EXAMPLE
+New-OGMSEdgeProfile -Mode Install -ProfileName "Clarivate"
+
+.EXAMPLE
+New-OGMSEdgeProfile -Mode Unintall -ProfileName "Clarivate"
+
+.NOTES
+    Name:       New-OGMSEdgeProfile       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-11-24
+    Updated:    
+    
+    Version history:
+    1.0.0 - 2021-11-24 Function created
+#>
+function New-OGMSEdgeProfile{
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $true, HelpMessage = 'Path to JSON ConfigFile')]
+        [ValidateNotNullOrEmpty()]
+        [ValidateSet("Install", "Uninstall")]
+        [String]$Mode,
+        [Parameter(Mandatory = $true, HelpMessage = 'Path to JSON ConfigFile')]
+        [String]$ProfileName = "Clarivate"
+    )
+    #Variables
+    $MSEdge_ProfilePath = "profile-$($ProfileName)"
+    $MSEdge_SCName = "Microsoft Edge - $($ProfileName)"
+    $MSEdge_SCArgs = "--profile-directory=$MSEdge_ProfilePath --no-first-run --no-default-browser-check"
+    $MSEdge_Exe = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
+    $LoggedonUser = Get-OGLoggedOnUser
+    if ($LoggedonUser){
+        $MSEdge_SCLocation = "$($LoggedonUser.APPDATA)\Microsoft\Windows\Start Menu\Programs"
+    }
+    else{
+        $message = "No user actively logged on. Bailing out."
+        Write-OGLogEntry $message -logtype Error
+        throw $message
+    }
+    switch ($Mode){
+        "Install"{
+            if (Test-OGFilePath -Path $MSEdge_Exe){
+                New-OGShortcut -Target "$($MSEdge_Exe)" -TargetArgs "$MSEdge_SCArgs" -ShortcutName "$MSEdge_SCName" -ShortcutLocation "$MSEdge_SCLocation" -ShortcutType File
+            }
+            Else{
+                $message = "Microsft Edge not installed on this machine. Bailing out."
+                Write-OGLogEntry $message -logtype Error
+                throw $message
+            }   
+        }
+        "Uninstall"{
+            if (Test-OGFilePath -Path "$($MSEdge_SCLocation)\$($MSEdge_SCName).lnk"){
+                Remove-Item -Path "$($MSEdge_SCLocation)\$($MSEdge_SCName).lnk" -Force
+            }
+            Else{
+                Write-OGLogEntry "Did not find [Shorcut: '$($MSEdge_SCLocation)\$($MSEdge_SCName).lnk'] no need to remove." -logtype Warning
+            }   
+        }
+    }
+ 
 }
 
 <#
