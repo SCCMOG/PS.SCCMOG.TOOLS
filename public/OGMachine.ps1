@@ -1706,7 +1706,8 @@ $Export = @(
     "New-OGContainer",
     "Test-OGFilePath",
     "Test-OGContainerPath",
-    "Export-OGFileDetailstoCSV"
+    "Export-OGFileDetailstoCSV",
+    "New-OGMSEdgeProfile"
 )
 
 foreach ($module in $Export){
