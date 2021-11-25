@@ -646,6 +646,7 @@ function Get-OGOoBFiles {
     Version history:
     1.0.0 - 2021-08-11 Function created
     1.1.0 - 2021-11-24 Modified to use SCCMOG Module Functions
+    1.1.1 - 2021-11-25 Changed to Get-OGLoggedOnUserWMI
 #>
 function New-OGPWAApplications{
     [cmdletbinding()]
@@ -670,7 +671,7 @@ function New-OGPWAApplications{
             Write-OGLogEntry "Edge Proxy not found at: $($EdgeProxyPath)"
             return $false
         }
-        $ActiveUser = Get-OGLoggedOnUser
+        $ActiveUser = Get-OGLoggedOnUserWMI
         if ($ActiveUser) {
             $PWAIcons = "$($ActiveUser.APPDATA)\PWAIcons"
             foreach ($item in $Config) {
@@ -863,6 +864,7 @@ New-OGMSEdgeProfile -Mode Unintall -ProfileName "Clarivate"
     
     Version history:
     1.0.0 - 2021-11-24 Function created
+    1.1.0 - 2021-11-25 Changed to Get-OGLoggedOnUserWMI
 #>
 function New-OGMSEdgeProfile{
     [cmdletbinding()]
@@ -879,7 +881,7 @@ function New-OGMSEdgeProfile{
     $MSEdge_SCName = "Microsoft Edge - $($ProfileName)"
     $MSEdge_SCArgs = "--profile-directory=$MSEdge_ProfilePath --no-first-run --no-default-browser-check"
     $MSEdge_Exe = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
-    $LoggedonUser = Get-OGLoggedOnUser
+    $LoggedonUser = Get-OGLoggedOnUserWMI
     if ($LoggedonUser){
         $MSEdge_SCLocation = "$($LoggedonUser.APPDATA)\Microsoft\Windows\Start Menu\Programs"
     }
