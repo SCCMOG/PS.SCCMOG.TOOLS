@@ -215,7 +215,7 @@ function Get-OGLoggedOnUserWMI{
     [cmdletbinding()]
     $CurrentLoggedOnUser = $null
     Write-OGLogEntry -Logtext "Getting currently logged from WMI on user for machine: $($ENV:COMPUTERNAME)"
-    $ActiveUser = Get-WmiObject -Class Win32_UserProfile | Where-Object {($_.SID -notmatch “^S-1-5-\d[18|19|20]$”)} | Sort-Object -Property LastUseTime -Descending | Select-Object -First 1
+    $ActiveUser = Get-WmiObject -Class Win32_UserProfile | Where-Object {($_.SID -notmatch "^S-1-5-\d[18|19|20]$")} | Sort-Object -Property LastUseTime -Descending | Select-Object -First 1
     if ($ActiveUser.Loaded){
             $SID_RegVirtualEnv = Get-ItemProperty "Registry::hku\$($ActiveUser.SID)\Volatile Environment" -ErrorAction SilentlyContinue
             if($SID_RegVirtualEnv)
