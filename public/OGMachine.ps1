@@ -671,7 +671,7 @@ function New-OGPWAApplications{
             Write-OGLogEntry "Edge Proxy not found at: $($EdgeProxyPath)"
             return $false
         }
-        $ActiveUser = Get-OGLoggedOnUserWMI
+        $ActiveUser = Get-OGLoggedOnUserCombined
         if ($ActiveUser) {
             $PWAIcons = "$($ActiveUser.APPDATA)\PWAIcons"
             foreach ($item in $Config) {
@@ -881,7 +881,7 @@ function New-OGMSEdgeProfile{
     $MSEdge_SCName = "Microsoft Edge - $($ProfileName)"
     $MSEdge_SCArgs = "--profile-directory=$MSEdge_ProfilePath --no-first-run --no-default-browser-check"
     $MSEdge_Exe = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe"
-    $LoggedonUser = Get-OGLoggedOnUserWMI
+    $LoggedonUser = Get-OGLoggedOnUserCombined
     if ($LoggedonUser){
         $MSEdge_SCLocation = "$($LoggedonUser.APPDATA)\Microsoft\Windows\Start Menu\Programs"
     }
