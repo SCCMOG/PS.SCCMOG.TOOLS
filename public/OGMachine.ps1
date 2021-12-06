@@ -115,7 +115,7 @@ An example
         1.0.0 - 2021-08-17 Function created
 # 
 #>    
-Function Execute-OGCommand (){
+Function Start-OGCommand (){
     [cmdletbinding()]
     param (
         [parameter(Mandatory = $true)]
@@ -1788,7 +1788,7 @@ $Export = @(
     "Test-OGContainerPath",
     "Export-OGFileDetailstoCSV",
     "New-OGMSEdgeProfile",
-    "Execute-OGCommand"
+    "Start-OGCommand"
 )
 
 foreach ($module in $Export){
