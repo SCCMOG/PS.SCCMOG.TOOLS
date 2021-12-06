@@ -1,5 +1,5 @@
 ##################################################################################################################################
-#  OS Region
+#  Process Region
 ##################################################################################################################################
 
 <#
@@ -81,8 +81,86 @@ Function Get-OGMSOfficeActiveProcesses {
                 -or ($_.ProcessName -like "*OneDrive*")) }
     Return $ActiveProcesses
 }
+
+<#
+.SYNOPSIS
+Short description
+
+.DESCRIPTION
+Long description
+
+.PARAMETER commandTitle
+Parameter description
+
+.PARAMETER commandPath
+Parameter description
+
+.PARAMETER commandArguments
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+    Name:       Get-OGMSOfficeActiveProcesses
+    Original:   https://stackoverflow.com/questions/8761888/capturing-standard-out-and-error-with-start-process
+    Updated:    Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-08-17
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2021-08-17 Function created
+# 
+#>    
+Function Execute-OGCommand (){
+    [cmdletbinding()]
+    param (
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Arguments,
+        [parameter(Mandatory = $False)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Title = "Execute Command",
+        [parameter(Mandatory = $False)]
+        [switch]$Wait = $false
+    )
+    Write-OGLogEntry "Executing [$($Title): '$($Path) $($Arguments)'] [Wait: $($Wait)]"
+    try{
+        $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+        $pinfo.FileName = $Path
+        $pinfo.RedirectStandardError = $true
+        $pinfo.RedirectStandardOutput = $true
+        $pinfo.UseShellExecute = $false
+        $pinfo.Arguments = $Arguments
+        $p = New-Object System.Diagnostics.Process
+        $p.StartInfo = $pinfo
+        $p.Start() | Out-Null
+        if ($Wait){
+            $p.WaitForExit()
+        }
+        $OutPut = [pscustomobject]@{
+            commandTitle = $Title
+            stdout = $p.StandardOutput.ReadToEnd()
+            stderr = $p.StandardError.ReadToEnd()
+            ExitCode = $p.ExitCode  
+        }
+        Write-OGLogEntry "Success Executing [$($Title): '$($Path) $($Arguments)'] [Wait: $($Wait)] [Exit Code: $($OutPut.ExitCode)]"
+        return $OutPut
+    }
+    catch{
+        Write-OGLogEntry "FAILED Executing [$($Title): '$($Path) $($Arguments)'] [Wait: $($Wait)]" -logType Error
+    }
+}
+
+
 ##################################################################################################################################
-# End OS Region
+# End Process Region
 ##################################################################################################################################
 ##################################################################################################################################
 ##################################################################################################################################
@@ -1709,7 +1787,8 @@ $Export = @(
     "Test-OGFilePath",
     "Test-OGContainerPath",
     "Export-OGFileDetailstoCSV",
-    "New-OGMSEdgeProfile"
+    "New-OGMSEdgeProfile",
+    "Execute-OGCommand"
 )
 
 foreach ($module in $Export){
