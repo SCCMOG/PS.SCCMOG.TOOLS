@@ -169,6 +169,170 @@ Function Start-OGCommand (){
 
 <#
 .SYNOPSIS
+Search for a directory
+
+.DESCRIPTION
+Search for a directory and if found return the details about it.
+
+.PARAMETER Path
+Where to search
+
+.PARAMETER Name
+Name of the folder to search for
+
+.PARAMETER Recurse
+Should the function search in recurse mode
+
+.EXAMPLE
+Get-OGFolderLocation -Path "$($env:ProgramFiles)","$(${env:ProgramFiles(x86)})" -Name "*Richie*"
+
+.EXAMPLE
+Get-OGFolderLocation -Path "$($env:ProgramFiles)","$(${env:ProgramFiles(x86)})" -Name "*Richie*" -Recurse
+
+.NOTES
+    Name:       Get-OGFolderLocation
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-12-09
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2021-12-09 Function created
+#>
+function Get-OGFolderLocation (){
+    [cmdletbinding()]
+    param (
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string[]]$Path,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name,
+        [parameter(Mandatory = $false)]
+        [switch]$Recurse
+    )
+    Write-OGLogEntry "Searching for [Folder: $($Name)] at [Path: $($Path)] [Recurse: $Recurse]"
+    $Found = @()
+    if (!($Recurse)){
+        $DirFound = Get-ChildItem $Path -Filter "*$($Name)*" -directory -ErrorAction SilentlyContinue
+    }
+    else{
+        $DirFound = Get-ChildItem $Path -Filter "*$($Name)*" -directory -Recurse -ErrorAction SilentlyContinue
+    }
+    foreach ($dir in $DirFound){
+        $objDir = $null
+        $objDir = [PSCustomObject]@{
+            Name = $dir.Name
+            FullName = $dir.FullName
+            Parent = $dir.Parent
+            Root = $dir.Root
+            CreationTime = $dir.CreationTime
+            LastAccessTime = $dir.LastAccessTime
+            LastWriteTime = $dir.LastWriteTime
+        }
+        $Found += $objDir
+    }
+    if ($found){
+        Write-OGLogEntry "Found [Folder: $($Name)] at [Path(s): '$($Found.FullName -join "' | '")'] [Recurse: $Recurse]"
+        return $Found
+    }
+    else{
+        Write-OGLogEntry "Did not find [Folder: $($Name)] at [Path(s): '$($Path -join "' | '")'] [Recurse: $Recurse]"
+        return $null
+    }
+}
+
+
+<#
+.SYNOPSIS
+Find a file
+
+.DESCRIPTION
+This function will find a file in a directory and return it if found.
+You can also specify every location a file with same name is found to be returned.
+
+.PARAMETER Path
+Path(s) to search
+
+.PARAMETER Name
+Name of file to look for.
+
+.PARAMETER All
+Should the function return all available locations the file was found or not.
+
+.EXAMPLE
+Get-OGFileLocation -Path $env:ProgramFiles -Name FindMe.txt
+Find the first location only
+
+.EXAMPLE
+Get-OGFileLocation -Path $env:ProgramFiles,$ENV:ProgramData -Name FindMe.txt -All
+Finds all the locations
+
+.NOTES
+    Name:       Get-OGFileLocation
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-12-09
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2021-12-09 Function created
+#>
+function Get-OGFileLocation (){
+    [cmdletbinding()]
+    param (
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string[]]$Path,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name,
+        [parameter(Mandatory = $false)]
+        [switch]$All
+    )
+    Write-OGLogEntry "Searching for [File: $($Name)] at [Path: '$($Path -join "' | '")'] [All Locations: $All]"
+    $Found = @()
+    foreach($dir in $Path){
+        $FileFound = Get-ChildItem -Path "$($dir)" -Filter "$($Name)" -Recurse -ErrorAction SilentlyContinue
+        If ($FileFound){
+            $FileDetails = $null
+            $objFile = $null
+            $FileDetails = Get-Item $FileFound.FullName
+            $objFile = [PSCustomObject]@{
+                Name = $FileDetails.Name
+                FullName = $FileDetails.FullName
+                Directory = $FileDetails.Directory
+                Size = $FileDetails.Length
+                Extension = $FileDetails.Extension
+                CreationTime = $FileDetails.CreationTime
+                LastAccessTime = $FileDetails.LastAccessTime
+                LastWriteTime = $FileDetails.LastWriteTime
+            }
+            if (!$All){
+                Write-OGLogEntry "Found [File: $($Name)] at [Path: $($objFile.Directory)] [All Locations: $All]"
+                return $objFile
+            }
+            else{
+                $Found += $objFile
+            }
+        }
+    }
+    if ($Found){
+        Write-OGLogEntry "Found [File: $($Name)] at [Path(s): '$($Found.Directory -join "' | '")'] [All Locations: $All]"
+        return $Found
+    }
+    else{
+        Write-OGLogEntry "Did not find [File: $($Name)] at [Path(s): '$($Path -join "' | '")'] [All Locations: $All]"
+        return $null
+    }
+}
+
+<#
+.SYNOPSIS
     Gets a Temp File/Folder location.
 .DESCRIPTION
     Creates if not found and returns the path of a Temp File/Folder location.
@@ -1788,7 +1952,9 @@ $Export = @(
     "Test-OGContainerPath",
     "Export-OGFileDetailstoCSV",
     "New-OGMSEdgeProfile",
-    "Start-OGCommand"
+    "Start-OGCommand",
+    "Get-OGFileLocation",
+    "Get-OGFolderLocation"
 )
 
 foreach ($module in $Export){
