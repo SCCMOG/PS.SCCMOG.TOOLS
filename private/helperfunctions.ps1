@@ -12,6 +12,40 @@ function new-scriptFrame{
     return $scriptFrame
 }
 
+Function Skip-OGLast {
+  <#
+  .SYNOPSIS
+    Skips the last N input objects provided.
+    N defaults to  1.
+    https://stackoverflow.com/a/49046189
+  #>
+  [CmdletBinding()]
+  param(
+    [ValidateRange(1, 2147483647)] [int] $Count = 1,
+    [Parameter(Mandatory = $True, ValueFromPipeline = $True)]$InputObject
+  )
+
+  begin { 
+    $mustEnumerate = -not $MyInvocation.ExpectingInput # collection supplied via argument
+    $qeuedObjs = New-Object System.Collections.Generic.Queue[object] $Count
+  }
+  process {
+    # Note: $InputObject is either a single pipeline input object or, if
+    #       the -InputObject *parameter* was used, the entire input collection.
+    #       In the pipeline case we treat each object individually; in the
+    #       parameter case we must enumerate the collection.
+    foreach ($o in ((, $InputObject), $InputObject)[$mustEnumerate]) {
+      if ($qeuedObjs.Count -eq $Count) {
+        # Queue is full, output its 1st element.
+        # The queue in essence delays output by $Count elements, which 
+        # means that the *last* $Count elements never get emitted.
+        $qeuedObjs.Dequeue()  
+      }
+      $qeuedObjs.Enqueue($o)
+    }
+  }
+}
+
 function getCallSequence(){
     $stack = @()
     $line = 0
@@ -37,7 +71,8 @@ function getCallSequence(){
     }
     #Obtain the details of the line in the script being executed and the function/script names
     $lineArray = $trace.ScriptLineNumber -split ' '
-    $lineArray = $lineArray | Select-Object -Skip 2 | Select-Object -SkipLast 1
+    $lineArray = $lineArray | Select-Object -Skip 2
+    $lineArray = $lineArray | Skip-OGLast 1
     if (!($null -eq $lineArray)){
         [array]::Reverse($lineArray)
         $line = $lineArray -join ":"
@@ -60,7 +95,7 @@ function checkDefaultLogDir(){
     $setACL = $false
     try{
         if (!(Test-Path -Path "$global:PS_NEWOGLogEntry_DEFAULT_LOGDIR" -PathType Container)){
-            New-Item -Path "$($ENV:ProgramData)" -Name "Logs" -ItemType Directory -Force | Out-Null
+            New-Item -Path "$($ENV:ProgramData)" -Name "Logs" -ItemType Directory -Force -ErrorAction Stop | Out-Null 
             $setACL = $true
         }
         elseif ((Test-Path -Path "$global:PS_NEWOGLogEntry_DEFAULT_LOGDIR" -PathType Container)-and(checkAdminRights)){
@@ -69,6 +104,11 @@ function checkDefaultLogDir(){
         else{
             Write-Warning "Global log directory: '$($global:PS_NEWOGLogEntry_DEFAULT_LOGDIR)' found but script not running as Admin. Will skip setting full control to all users for directory recursively."
         }
+    }
+    catch{
+        throw "Failed creating Global log directory: '$($global:PS_NEWOGLogEntry_DEFAULT_LOGDIR)'. Bailing out. Error: $_"
+    }
+    try{
         if($setACL){
             #Set Full Control for Built in Users Group
             $BuiltinUsersSID = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-545'
@@ -80,7 +120,7 @@ function checkDefaultLogDir(){
                                                                                             'None',
                                                                                             "Allow")
             $ACL.SetAccessRule($AccessRule)
-            $ACL | Set-Acl $global:PS_NEWOGLogEntry_DEFAULT_LOGDIR
+            $ACL | Set-Acl $global:PS_NEWOGLogEntry_DEFAULT_LOGDIR -ErrorAction stop
             return $true
         }
         else {
@@ -88,7 +128,7 @@ function checkDefaultLogDir(){
         }
     }
     catch{
-        Throw "Failed configuring defualt log folder. Error: $_"
+        Write-Warning "Unable to set Global log directory permissions recursively: '$($global:PS_NEWOGLogEntry_DEFAULT_LOGDIR)'. Continueing script."
     }
 }
 
