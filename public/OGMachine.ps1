@@ -1218,7 +1218,11 @@ function Export-OGFileDetailstoCSV {
             Write-OGLogEntry "Attempting to export data to CSV: '$($CompletePath)'"
             $List | Export-Csv "$($CompletePath)" -NoClobber -NoTypeInformation -Force
             Write-OGLogEntry "Success exporting data to CSV: '$($CompletePath)'"
-            return $($CompletePath)
+            $objExportDetails = ([PSCustomObject]@{
+                Path          = $CompletePath
+                TotalFiles    = $List.Count
+            })
+            return $($objExportDetails)
         }
         catch{
             $message = "Failed exporting data to CSV: '$($CompletePath)'. Error: $_"
