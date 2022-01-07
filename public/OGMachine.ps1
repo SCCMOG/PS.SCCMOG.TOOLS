@@ -1157,6 +1157,64 @@ function New-OGMSEdgeProfile{
 
 <#
 .SYNOPSIS
+Exports Get-Childitem to an organsised object.
+
+.DESCRIPTION
+Exports Get-Childitem to an organsised object.
+
+.PARAMETER Files
+Results of Get-Childitem
+
+.EXAMPLE
+Export-OGFileDetails -Files $GetChildItemResult
+
+.NOTES
+    Name:       Export-OGFileDetails 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-07
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2022-01-07 Function created
+#>
+function Export-OGFileDetails {
+    param(
+        [parameter(Mandatory = $true)]
+        [object]$Files
+    )
+        Write-OGLogEntry "Begining file data organisation"
+        $List = New-Object System.Collections.Generic.List[System.Object]
+        try{
+            foreach ($rootDir in $Files) {
+                if ($rootDir -notlike $null) {
+                    foreach ($file in $rootDir) {
+                        $List.Add([PSCustomObject]@{
+                                Name          = $file.Name
+                                FullName      = $file.FullName
+                                Directory     = $file.Directory
+                                Size          = $file.Length
+                                CreationTime  = $file.CreationTime
+                                LastWriteTime = $file.LastWriteTime 
+                            })
+                    }
+                }
+            }
+            Write-OGLogEntry "Fiile data organisation complete returning object."
+            return $($List)
+        }
+        catch{
+            $message = "Failed during data organisation. Error: $_"
+            Write-OGLogEntry $message -logtype error
+            throw $message
+        } 
+}
+
+
+<#
+.SYNOPSIS
 Exports Get-Childitem result to CSV
 
 .DESCRIPTION
@@ -1958,7 +2016,8 @@ $Export = @(
     "New-OGMSEdgeProfile",
     "Start-OGCommand",
     "Get-OGFileLocation",
-    "Get-OGFolderLocation"
+    "Get-OGFolderLocation",
+    "Export-OGFileDetails"
 )
 
 foreach ($module in $Export){
