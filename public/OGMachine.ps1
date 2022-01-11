@@ -814,9 +814,12 @@ function Get-OGOoBFiles {
         )
         $Complete_Jobs = Get-Job -State Completed
         foreach ( $job in $Complete_Jobs ) {
+            $job_Data = $Null
             $job_Data = Receive-Job $job 
             Remove-Job $job -Force
-            $List.Add($job_Data)
+            if ($job_Data){
+                $List.Add($job_Data)
+            }
         }
     }
     #Get all folders on root of drive
