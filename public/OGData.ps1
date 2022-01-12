@@ -96,9 +96,83 @@ function Select-OGUnique {
     }
 }
 
+
+<#
+.SYNOPSIS
+Converts a registry object to an Order list or ordered HashTable
+
+.DESCRIPTION
+Converts a registry object to an Order list or ordered HashTable
+
+.PARAMETER objReg
+Accepts a Powershell Registry object.
+
+.PARAMETER AsHashtable
+Return an ordered HashTable
+
+.EXAMPLE
+Convert-OGReg2PSObject -objReg $UserRegKey
+Return an ordered List from registry object $UserRegKey
+
+.EXAMPLE
+Convert-OGReg2PSObject -objReg $UserRegKey -AsHashtable
+Return an ordered HashTable from registry object $UserRegKey
+
+.EXAMPLE
+$UserRegKey | Convert-OGReg2PSObject 
+Pipeline return an ordered List from registry object $UserRegKey
+
+.EXAMPLE
+$UserRegKey | Convert-OGReg2PSObject -AsHashtable
+Pipeline return an ordered HashTable from registry object $UserRegKey
+
+.NOTES
+    Name:       Convert-OGReg2PSObject
+    Original:   https://lifeofheath.wordpress.com/2012/08/15/a-faster-way-to-output-unique-objects-in-powershell/
+    Modded:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-12
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-12 Function created
+#>
+function Convert-OGReg2PSObject{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [psobject] $objReg,
+        [Parameter(Position = 1)]
+        [switch] $AsHashtable
+    )
+    $regList= @()
+    $sregList = @()
+    $regHash = [ordered]@{}
+    $objReg.psobject.Properties | Where-Object -Property name -notlike "ps*" | ForEach-Object {
+            $reg_Property = [PSCustomObject]@{
+                Property = $_.Name
+                Value = $_.Value
+            }
+            $regList += $reg_Property          
+    }
+    $sregList = $regList | Sort-object -Property Property
+    if (!($AsHashtable)){
+        return $sregList
+    }
+    else{
+        $sregList | ForEach-Object {
+            $regHash.Add($_.Property ,$_.Value)      
+        }
+        return $regHash
+    }
+}
+
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
-    "Select-OGUnique"
+    "Select-OGUnique",
+    "Convert-OGReg2PSObject"
 )
 
 foreach ($module in $Export){
