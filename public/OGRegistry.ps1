@@ -435,7 +435,7 @@ Function Remove-OGRegistryKeyItem {
     )
     Write-OGLogEntry "Removing RegKey Item: '$($Name)' Path: '$($RegKey)'" -logtype Warning
     try {
-        if($Found = Test-OGRegistryKeyItem -RegKey $RegKey -Name $Name){
+        if(Test-OGRegistryKeyItem -RegKey $RegKey -Name $Name){
             Remove-ItemProperty -Path "$RegKey" -Name $Name -Force  | Out-Null
             $WasRemoved = Test-OGRegistryKeyItem -RegKey $RegKey -Name $Name
             if (!($WasRemoved)){
@@ -444,7 +444,7 @@ Function Remove-OGRegistryKeyItem {
             }
         }
         else{
-            Write-OGLogEntry "RegKey Item: '$($Name)' at Path: '$($RegKey)' not found. Skipping removal"
+            Write-OGLogEntry "No need to execute removal."
             return $true
         }
     }
