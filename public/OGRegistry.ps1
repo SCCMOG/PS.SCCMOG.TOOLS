@@ -179,7 +179,7 @@ Function Test-OGRegistryKey {
         Return $true
     }
     else {
-        Write-OGLogEntry "Did not find RegKey: '$RegKey'" -logtype Warning
+        Write-OGLogEntry "Did not find RegKey: '$RegKey'"
         Return $false
     }
 }
@@ -322,7 +322,7 @@ Function Test-OGRegistryKeyItem {
         }
     }
     catch {
-        Write-OGLogEntry "Did not find Registry Key Item: '$($Name)' at '$($RegKey)'" -logtype Warning
+        Write-OGLogEntry "Did not find Registry Key Item: '$($Name)' at '$($RegKey)'"
         return $false
     }
 } 
@@ -392,6 +392,69 @@ Function New-OGRegistryKeyItem {
     }
 }
 
+
+<#
+.SYNOPSIS
+Remove Regkey Item
+
+.DESCRIPTION
+Remove Regkey Item
+
+.PARAMETER RegKey
+Regkey to create the new item
+
+.PARAMETER Name
+Name of the new item.
+
+.PARAMETER Type
+Type of the new item.
+
+.EXAMPLE
+Remove-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "BackupRequired"
+
+.NOTES
+    Name:       Remove-OGRegistryKeyItem 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-19
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2022-01-19 Function created
+#>
+Function Remove-OGRegistryKeyItem {
+    param (
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$RegKey,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Name
+    )
+    Write-OGLogEntry "Removing RegKey Item: '$($Name)' Path: '$($RegKey)'" -logtype Warning
+    try {
+        if($Found = Test-OGRegistryKeyItem -RegKey $RegKey -Name $Name){
+            Remove-ItemProperty -Path "$RegKey" -Name $Name -Force  | Out-Null
+            $WasRemoved = Test-OGRegistryKeyItem -RegKey $RegKey -Name $Name
+            if (!($WasRemoved)){
+                Write-OGLogEntry "Success removing RegKey Item: '$($Name)' Path: '$($RegKey)'"
+                return $true
+            }
+        }
+        else{
+            Write-OGLogEntry "RegKey Item: '$($Name)' at Path: '$($RegKey)' not found. Skipping removal"
+            return $true
+        }
+    }
+    catch {
+        $message = "Failed to create RegKey Item: '$($Name)' Value: '$($Value)' Type: '$($type)'. Error message: $_"
+        Write-OGLogEntry $message -logtype Error
+        throw $message
+    }
+}
+
 ##################################################################################################################################
 # End Get Registry Region
 ##################################################################################################################################
@@ -403,7 +466,8 @@ $Export = @(
     "New-OGRegistryKey",
     "Get-OGRegistryKey",
     "Test-OGRegistryKeyItem",
-    "New-OGRegistryKeyItem"
+    "New-OGRegistryKeyItem",
+    "Remove-OGRegistryKeyItem"
 )
 
 foreach ($module in $Export){
