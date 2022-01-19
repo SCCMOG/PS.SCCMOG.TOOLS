@@ -235,10 +235,10 @@ function Connect-ConfigMgr(){
     )
     Write-OGLogEntry "Attempting to import the ConfigMgr Module. SiteCode: $($SiteCode) ProviderMachineName: $($ProviderMachineName)"
     try{
-        if((Get-Module ConfigurationManager) -eq $null) {
+        if($null -eq (Get-Module ConfigurationManager)) {
             Import-Module "$($ENV:SMS_ADMIN_UI_PATH)\..\ConfigurationManager.psd1" @initParams 
         }
-        if((Get-PSDrive -Name $SiteCode -PSProvider CMSite -ErrorAction SilentlyContinue) -eq $null) {
+        if($null -eq (Get-PSDrive -Name $SiteCode -PSProvider CMSite -ErrorAction SilentlyContinue)) {
             New-PSDrive -Name $SiteCode -PSProvider CMSite -Root $ProviderMachineName @initParams
         }
         Set-Location "$($SiteCode):\" @initParams
