@@ -433,9 +433,9 @@ Function Remove-OGRegistryKeyItem {
         [ValidateNotNullOrEmpty()]
         [string]$Name
     )
-    Write-OGLogEntry "Removing RegKey Item: '$($Name)' Path: '$($RegKey)'" -logtype Warning
     try {
         if(Test-OGRegistryKeyItem -RegKey $RegKey -Name $Name){
+            Write-OGLogEntry "Removing RegKey Item: '$($Name)' Path: '$($RegKey)'" -logtype Warning
             Remove-ItemProperty -Path "$RegKey" -Name $Name -Force  | Out-Null
             $WasRemoved = Test-OGRegistryKeyItem -RegKey $RegKey -Name $Name
             if (!($WasRemoved)){
