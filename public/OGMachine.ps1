@@ -1114,11 +1114,11 @@ New-OGMSEdgeProfile -Mode Unintall -ProfileName "Clarivate"
 function New-OGMSEdgeProfile{
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory = $true, HelpMessage = 'Path to JSON ConfigFile')]
+        [Parameter(Mandatory = $true, HelpMessage = 'Function Mode')]
         [ValidateNotNullOrEmpty()]
         [ValidateSet("Install", "Uninstall")]
         [String]$Mode,
-        [Parameter(Mandatory = $true, HelpMessage = 'Path to JSON ConfigFile')]
+        [Parameter(Mandatory = $false, HelpMessage = 'Name of Profile to create.')]
         [String]$ProfileName = "Clarivate"
     )
     #Variables
