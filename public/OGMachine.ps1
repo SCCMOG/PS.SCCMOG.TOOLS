@@ -2079,7 +2079,8 @@ $Export = @(
     "Start-OGCommand",
     "Get-OGFileLocation",
     "Get-OGFolderLocation",
-    "Export-OGFileDetails"
+    "Export-OGFileDetails",
+    "Wait-OGScheduledTask"
 )
 
 foreach ($module in $Export){
