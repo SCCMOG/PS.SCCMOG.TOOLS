@@ -1601,6 +1601,65 @@ function Wait-OGProcessStart {
 
 <#
 .SYNOPSIS
+Waits for a scheduled task to exit.
+
+.DESCRIPTION
+Checks for a scheduled task and then waits for that task to exit.
+
+.PARAMETER TaskName
+Name of scheduled Task to wait for.
+
+.PARAMETER Timeout
+Wait timeout in seconds. Default 300s
+
+.PARAMETER loopTime
+Log update frequency. Default 5s
+
+.EXAMPLE
+Wait-OGScheduledTask -TaskName "My Task Name"
+Wait for a scheduled task with defualt wait time and looptime.
+
+.EXAMPLE
+Wait-OGScheduledTask -TaskName "My Task Name" -Wait 40 -looktime 1
+Wait for a scheduled task with 40s wait time and 1s looptime.
+
+.NOTES
+    Name:       Wait-OGScheduledTask
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-24
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-24 Function created
+#>
+function Wait-OGScheduledTask{
+    param(
+        [Parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [string]$TaskName,
+        [Parameter(Mandatory = $false, Position = 1,ValueFromPipeline)]
+        [int]$Timeout = 300,
+        [Parameter(Mandatory = $false, Position = 2,ValueFromPipeline)]
+        [int]$loopTime = 5
+    )
+    $Task = Get-ScheduledTask | Where-Object {$_.TaskName -eq "$($TaskName)"}
+    if (!($Task)){
+        Write-OGLogEntry "Task not found with name. [Task Name: $($TaskName)]" -logtype Warning
+        break
+    }
+    $timer =  [Diagnostics.Stopwatch]::StartNew()
+    while (((Get-ScheduledTask  "$($Task.TaskName)").State -ne  'Ready') -and  ($timer.Elapsed.TotalSeconds -lt $Timeout)) {    
+        Write-OGLogEntry "Waiting for scheduled task to complete [Task Name: $($Task.TaskName)] [Time Elapsed: $($timer.Elapsed.TotalSeconds)s] [Time Remaining: $($Timeout - $timer.Elapsed.TotalSeconds)s]"
+        Start-Sleep -Seconds $loopTime
+    }
+    $timer.Stop()
+    Write-OGLogEntry "Scheduled task has completed. [Task Name: $($Task.TaskName)] [Total Time: $($timer.Elapsed.TotalSeconds)s]"
+}
+
+
+<#
+.SYNOPSIS
     Gets A Windows 7/Server 2008 Sceduled Task. 
 
 .DESCRIPTION

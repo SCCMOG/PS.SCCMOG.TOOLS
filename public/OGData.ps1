@@ -140,22 +140,26 @@ Pipeline return an ordered HashTable from registry object $UserRegKey
 #>
 
 
-function Convert-OGReg2PSObject{
+function Convert-OG2PSObject{
     [CmdletBinding()]
     param
     (
         [Parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
         [psobject] $objReg,
         [Parameter(Position = 1)]
-        [switch] $AsHashtable
+        [switch] $AsHashtable,
+        [Parameter(Position = 2)]
+        [switch] $ExpandString
     )
     $regList= @()
     $sregList = @()
     $regHash = [ordered]@{}
     $objReg.psobject.Properties | Where-Object -Property name -notlike "ps*" | ForEach-Object {
+        $value = $_.Value
+        if ($ExpandString){$value = $ExecutionContext.InvokeCommand.ExpandString($value)}  
             $reg_Property = [PSCustomObject]@{
                 Property = $_.Name
-                Value = $_.Value
+                Value = $value             
             }
             $regList += $reg_Property          
     }
@@ -171,10 +175,22 @@ function Convert-OGReg2PSObject{
     }
 }
 
+
+function Invoke-ExpandString {
+    param(
+        [Parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [string]$string
+    )
+        $ExecutionContext.InvokeCommand.ExpandString($string)
+        return $string
+}
+
+
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
     "Select-OGUnique",
-    "Convert-OGReg2PSObject"
+    "Convert-OG2PSObject",
+    "Invoke-ExpandString"
 )
 
 foreach ($module in $Export){

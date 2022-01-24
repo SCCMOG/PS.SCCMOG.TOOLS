@@ -144,6 +144,65 @@ function Set-OGLogEntryPath (){
     Write-Verbose "PS.SCCMOG.Tools Module will now write to: '$($global:PS_NEWOGLogEntry_DEFAULT_LOGPATH)'"
 }
 
+
+<#
+.SYNOPSIS
+    Sets the default logging Root path of Write-OGLogEntry
+.DESCRIPTION
+    Sets the default logging path of Write-OGLogEntry.
+    NOTE: Run this at the begining of the script.
+.EXAMPLE
+    PS C:\> Set-OGLogEntryRootPath -Path "$env:programdata\logs" -Force -Verbose
+    Sets the default logging root path of Write-OGLogEntry to "$env:programdata\logs"
+
+.PARAMETER Path
+The path to store the log file.
+
+.PARAMETER Force
+If used will append to a current log file if one is foun dthe new location.
+
+.INPUTS
+    Full string path to log file.
+
+.OUTPUTS
+    Output (if any)
+
+.NOTES
+        Name:       Set-OGLogEntryRootPath
+        Author:     Richie Schuster - SCCMOG.com
+        Website:    https://www.sccmog.com
+        Contact:    @RichieJSY
+        Created:    2022-01-24
+        Updated:    -
+
+        Version history:
+            1.0.0 - 2022-01-24 Function created
+#>
+function Set-OGLogEntryRootPath (){
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $true, HelpMessage = 'Path')]
+        [ValidateNotNullOrEmpty()]
+        [String]$Path,
+        [Parameter(Mandatory = $false, HelpMessage = 'Appends to if already found.')]
+        [switch]$Force=$false
+    )
+    if (!(Test-Path $Path -PathType Container)){
+        if (!($Force)){
+            Write-Error "Path: '$($Path)' does not exist. Specifiy -Force switch to create the directory."
+            break
+        }
+        else{
+            New-Item -Path "$($Path)" -Force
+            Write-Verbose "Created: '$($Path)' "
+        }
+    }
+    $global:PS_NEWOGLogEntry_DEFAULT_LOGPATH = "$($Path)\$($global:PS_SCCMOG_cScriptName).log"
+    Write-Verbose "PS.SCCMOG.Tools Module will now write logs to: '$($Path)'"
+    Write-Verbose "PS.SCCMOG.Tools Module log Name: '$($global:PS_SCCMOG_cScriptName)'"
+}
+
+
 <#
 .SYNOPSIS
     Create logging mutex to allow logging to the same file from multiple scripts at the same time.
@@ -284,100 +343,12 @@ function Set-OGEventLogLogging{
 }
 
 
-
-
-
-
-#############################################################################
-#
-#Public Functions to be exported. 
-#
-#############################################################################
-<#$Export_Functions = New-Object -TypeName System.Collections.ArrayList
-    $Export_Functions.AddRange(@(
-        "Write-OGLogEntry",
-        "Set-OGLogEntryPath",
-        #"Set-OGEventLog", #Removed due to Auto Configuration from Set-OGEventLogLogging
-        #"Set-OGEventLogSource", 
-        "Enable-OGLogMutex",
-        "Set-OGEventLogLogging"
-    ))
-
-foreach ($function in $Export_Functions){
-    Export-ModuleMember -Function "$($function)"
-}#>
-
-
-
-
-#############################################################################
-#SFL
-#############################################################################
-
-# function Set-OGEventLog (){
-#     param(
-#         [Parameter(Mandatory = $true, HelpMessage = 'Path')]
-#         [ValidateNotNullOrEmpty()]
-#         [String]$EventLogName,
-#         [Parameter(Mandatory = $false, HelpMessage = 'Appends to if already found.')]
-#         [switch]$Force=$false
-#     )
-#     $result = getEventLog -LogName $EventLogName
-#     if ($result){
-#         $script:PS_NEWOGLogEntry_DEFAULT_EventLog = $EventLogName
-#         Write-Verbose "Success setting Defualt event log to: $($EventLogName)"
-#     }
-#     Else{
-#         if (!($Force)){
-#             Write-Error "Event log does not exist with name: '$($EventLogName)' exists. Specifiy -Force switch to create event log to file."
-#         }
-#         Else{
-#             $script:PS_NEWOGLogEntry_DEFAULT_EventLog = $EventLogName
-#             newEventLog -LogName $script:PS_NEWOGLogEntry_DEFAULT_EventLog
-#         }
-#     }
-# }
-
-
-# function Set-OGEventLogSource (){
-#     param(
-#         [Parameter(Mandatory = $false, HelpMessage = 'Event Log name. Default is set in module.')]
-#         [ValidateNotNullOrEmpty()]
-#         [String]$EventLogName = "$script:PS_NEWOGLogEntry_DEFAULT_EventLog",
-#         [Parameter(Mandatory = $true, HelpMessage = 'The new source name')]
-#         [String]$SourceName,
-#         [Parameter(Mandatory = $false, HelpMessage = 'Creates it if not found already.')]
-#         [switch]$Force=$false
-#     )
-#     $resultEventLog = getEventLog -LogName $EventLogName
-#     if ($resultEventLog){
-#         $result = getEventLogSource -eventLog $EventLogName
-#         if ($SourceName -in $result){
-#             $script:PS_NEWOGLogEntry_DEFAULT_EventLog = $EventLogName
-#             Write-Verbose "Success setting Default event log to: $($script:PS_NEWOGLogEntry_DEFAULT_EventLog)"
-#             $script:PS_NEWOGLogEntry_DEFAULT_EventLogSource = $SourceName
-#             Write-Verbose "Success setting Default event log source to: $($script:PS_NEWOGLogEntry_DEFAULT_EventLogSource)"
-#         }
-#         Else{
-#             if (!($Force)){
-#                 Write-Error "Event log: '$($EventLogName)'' found but does not contain log source: '$($SourceName)' Specifiy -Force switch to create event log source."
-#             }
-#             Else{
-#                 newEventLogSource -EventLog "$EventLogName" -EventSource "$($SourceName)"
-#                 $script:PS_NEWOGLogEntry_DEFAULT_EventLogSource = $SourceName
-#             }
-#         }
-#     }
-#     Else{
-#          Write-Error "No Event log with name: '$($EventLogName)'' found please create it first using Set-OGEventLog and the Force switch applied."
-#     }
-# }
-#Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
     "Enable-OGLogMutex",
     "Set-OGEventLogLogging",
     "Set-OGLogEntryPath",
-    "Write-OGLogEntry"
+    "Write-OGLogEntry",
+    "Set-OGLogEntryRootPath"
 )
 
 FOREACH ($module in $Export){
