@@ -717,6 +717,59 @@ namespace Runasuser
         throw $message
     }
 }
+
+
+<#
+.SYNOPSIS
+Test if OneDrive Known Folder Move Enabled for user.
+
+.DESCRIPTION
+Test if OneDrive Known Folder Move Enabled for user.
+
+.PARAMETER LoggedOnUser
+PS Object retrived for the Get-OGLoggedOnUserCombined function.
+
+.EXAMPLE
+Get-OGOneDriveKFMState -LoggedOnUser $LoggedOnUse
+
+.NOTES
+    Name:       Get-OGOneDriveKFMState       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-25
+    Updated:    -
+#>
+function Get-OGOneDriveKFMState {
+    param(
+        [parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [PSCustomObject]$LoggedOnUser
+    )
+    Write-OGLogEntry "Getting OneDrive KFM state for [User: $($LoggedOnUser.USERNAME)]"
+    $OneDriveAcPath = "Software\Microsoft\OneDrive\Accounts"
+    if(!(Get-PSDrive | Where-Object {$_.Name -eq "HKU"})){New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null}
+    $OneDriveBusinessPaths = Get-ChildItem -Path "HKU:\$($LoggedOnUser.SID)\$($OneDriveAcPath)" | Where-Object { ($_.PSIsContainer)-and($_.Name -like "*Business*") } | Select-Object Name
+    if ($OneDriveBusinessPaths){
+        foreach ($path in $OneDriveBusinessPaths) {
+            $OnedriveData = Get-OGRegistryKey -RegKey "HKU:\$($LoggedOnUser.SID)\$($OneDrive)"
+            if ($OnedriveData.KFMState){
+                Write-OGLogEntry "KFMState is set returning values."
+                $OneDriveKFMState = $OnedriveData.KFMState | ConvertFrom-Json
+                foreach($p in $OneDriveKFMState.PSObject.Properties){ 
+                    if ($p.Value -like "$($LoggedOnUser.USERPROFILE)*"){
+                        return $OneDriveKFMState
+                    }
+                }
+            }
+        }
+    }
+    else{
+        Write-OGLogEntry "OneDrive KFM not set for [User: $($LoggedOnUser.USERNAME)][Mail:$($LoggedOnUser.Email)]"
+        return $false
+    }
+}
 ##################################################################################################################################
 # End Current User Region
 ##################################################################################################################################
@@ -726,7 +779,8 @@ $Export = @(
     "Get-OGLoggedOnUser",
     "Invoke-OGStartProcessAsCurrentUser",
     "Get-OGLoggedOnUserWMI",
-    "Get-OGLoggedOnUserCombined"
+    "Get-OGLoggedOnUserCombined",
+    "Get-OGOneDriveKFMState"
 )
 
 foreach ($module in $Export){
