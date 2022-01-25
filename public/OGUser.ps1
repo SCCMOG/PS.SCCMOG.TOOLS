@@ -750,10 +750,12 @@ function Get-OGOneDriveKFMState {
     Write-OGLogEntry "Getting OneDrive KFM state for [User: $($LoggedOnUser.USERNAME)]"
     $OneDriveAcPath = "Software\Microsoft\OneDrive\Accounts"
     if(!(Get-PSDrive | Where-Object {$_.Name -eq "HKU"})){New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null}
-    $OneDriveBusinessPaths = Get-ChildItem -Path "HKU:\$($LoggedOnUser.SID)\$($OneDriveAcPath)" | Where-Object { ($_.PSIsContainer)-and($_.Name -like "*Business*") } | Select-Object Name
+    $UserOneDriveAcPath = "HKU:\$($LoggedOnUser.SID)\$($OneDriveAcPath)"
+    $OneDriveBusinessPaths = Get-ChildItem -Path "$($UserOneDriveAcPath)" | Where-Object { ($_.PSIsContainer)-and($_.Name -like "*Business*") } | Select-Object Name
     if ($OneDriveBusinessPaths){
+        Write-OGLogEntry "Found OneDrive Business Key [User: $($LoggedOnUser.USERNAME)]"
         foreach ($path in $OneDriveBusinessPaths) {
-            $OnedriveData = Get-OGRegistryKey -RegKey "HKU:\$($LoggedOnUser.SID)\$($OneDrive)"
+            $OnedriveData = Get-OGRegistryKey -RegKey "$(($path.Name).Replace('HKEY_USERS','HKU:'))"
             if ($OnedriveData.KFMState){
                 Write-OGLogEntry "KFMState is set returning values."
                 $OneDriveKFMState = $OnedriveData.KFMState | ConvertFrom-Json
@@ -763,13 +765,16 @@ function Get-OGOneDriveKFMState {
                     }
                 }
             }
+            Write-OGLogEntry "OneDrive KFMState property not found @ [Key: $(($path.Name).Replace('HKEY_USERS','HKU:'))]"
         }
+        Write-OGLogEntry "OneDrive KFMState not set for [User: $($LoggedOnUser.USERNAME)][Mail:$($LoggedOnUser.Email)]"
     }
     else{
-        Write-OGLogEntry "OneDrive KFM not set for [User: $($LoggedOnUser.USERNAME)][Mail:$($LoggedOnUser.Email)]"
+        Write-OGLogEntry "OneDrive path not found [User: $($LoggedOnUser.USERNAME)][Mail:$($LoggedOnUser.Email)][Path: $($UserOneDriveAcPath)"
         return $false
     }
 }
+
 ##################################################################################################################################
 # End Current User Region
 ##################################################################################################################################
