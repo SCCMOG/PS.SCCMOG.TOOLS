@@ -128,8 +128,7 @@ Pipeline return an ordered HashTable from registry object $UserRegKey
 
 .NOTES
     Name:       Convert-OGReg2PSObject
-    Original:   https://lifeofheath.wordpress.com/2012/08/15/a-faster-way-to-output-unique-objects-in-powershell/
-    Modded:     Richie Schuster - SCCMOG.com
+    Author:     Richie Schuster - SCCMOG.com
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2022-01-12
@@ -138,8 +137,6 @@ Pipeline return an ordered HashTable from registry object $UserRegKey
     Version history:
         1.0.0 - 2022-01-12 Function created
 #>
-
-
 function Convert-OG2PSObject{
     [CmdletBinding()]
     param
@@ -175,10 +172,128 @@ function Convert-OG2PSObject{
     }
 }
 
+<#
+.SYNOPSIS
+Creates an encrypted file with a string password
 
+.DESCRIPTION
+Creates an encrypted file with a string password
+
+.PARAMETER String
+The string password you would like to encrypt
+
+.PARAMETER OutFile
+Path to spit out the encrypted file.
+
+.EXAMPLE
+New-OGEncryptedStrFile -String "MyCrazyPassword" -OutFile "PathAndFileName\toStorePass\Encrypted"
+
+.NOTES
+    Name:       Get-OGEncryptedStrFile
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-26
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-26 Function created
+#>
+function New-OGEncryptedStrFile {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [string]$String,
+        [Parameter(Mandatory = $true, Position = 1, ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [string]$OutFile
+    )
+    try {
+        $SecurePassword = ConvertTo-SecureString $string -AsPlainText -Force
+        $Encrypted = convertfrom-securestring $SecurePassword -key (1..16)
+        $Encrypted | set-content $OutFile -Force
+    }
+    catch {
+        throw "Failed creating encrypted file. Error: $_"
+    }
+
+}
+
+
+<#
+.SYNOPSIS
+Converts a previously encrypted string in file back to clear text.
+
+.DESCRIPTION
+Converts a previously encrypted string in file back to clear text.
+
+.PARAMETER FilePath
+Path to encrypted file.
+
+.EXAMPLE
+Get-OGEncryptedStrFile -FilePath "$($scriptRoot)\NameOfFile"
+
+.NOTES
+    Name:       Get-OGEncryptedStrFile
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-26
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-26 Function created
+#>
+function Get-OGEncryptedStrFile {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [string]$FilePath
+    )
+    if (!(Test-path $FilePath -PathType Leaf)) {
+        throw "No file found at: $($FilePath)"
+    }
+    try {
+        $SecreRet = convertto-securestring (get-content "$($FilePath)") -key (1..16)
+        $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecreRet)
+        $UnsecurePassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+        return $UnsecurePassword
+    }
+    catch {
+        throw "Failed getting encrypted file. Error: $_"
+    }
+}
+
+<#
+.SYNOPSIS
+Expands a PS variable from a string.
+
+.DESCRIPTION
+Expands a PS variable from a string.
+
+.PARAMETER string
+String containing variable
+
+.EXAMPLE
+Invoke-ExpandString -string "$ENV:ComputerName"
+
+.NOTES
+    Name:       Get-OGEncryptedStrFile
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-21
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-21 Function created
+#>
 function Invoke-ExpandString {
     param(
         [Parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
         [string]$string
     )
         $ExecutionContext.InvokeCommand.ExpandString($string)
@@ -190,6 +305,8 @@ function Invoke-ExpandString {
 $Export = @(
     "Select-OGUnique",
     "Convert-OG2PSObject",
+    "New-OGEncryptedStrFile",
+    "Get-OGEncryptedStrFile",
     "Invoke-ExpandString"
 )
 
