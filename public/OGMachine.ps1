@@ -78,7 +78,13 @@ Function Get-OGMSOfficeActiveProcesses {
                 -or ($_.ProcessName -like "*Groove*")`
                 -or ($_.ProcessName -like "*MSOSync*")`
                 -or ($_.ProcessName -like "*Teams*")`
-                -or ($_.ProcessName -like "*OneDrive*")) }
+                -or ($_.ProcessName -like "*EXCEL*")`
+                -or ($_.ProcessName -like "*WINWORD*")`
+                -or ($_.ProcessName -like "*POWERPNT*")`
+                -or ($_.ProcessName -like "*MSACCESS*")`
+                -or ($_.ProcessName -like "*MSPUB*")`
+                -or ($_.ProcessName -like "*OneDrive*")`
+                -or ($_.ProcessName -like "*CompanyPortal*"))  }
     Return $ActiveProcesses
 }
 
