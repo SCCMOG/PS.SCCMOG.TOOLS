@@ -300,6 +300,89 @@ function Invoke-ExpandString {
         return $string
 }
 
+<#
+.SYNOPSIS
+Correct string for XML parsing
+
+.DESCRIPTION
+Correct string for XML parsing
+
+.PARAMETER String
+String to parse
+
+.EXAMPLE
+Repair-OGXmlString -String $strTaskArgs
+
+.NOTES
+    Name:       Repair-OGXmlString
+    Author:     Richie Schuster - SCCMOG.com
+    Original:   https://stackoverflow.com/a/45708615
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-31
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-31 Function created
+#>
+function Repair-OGXmlString {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [string]$String
+    )
+    Write-OGLogEntry "Cleaning string for XML parsing [String: $($String)]"
+    $rPattern = "[^\x09\x0A\x0D\x20-\xD7FF\xE000-\xFFFD\x10000\x10FFFF]"
+    $cleaned = $String -replace $rPattern, ''
+    Write-OGLogEntry "Returned parsed string [String: $($cleaned)]"
+    return $cleaned
+}
+
+
+<#
+.SYNOPSIS
+Convert HEX to ASCII
+
+.DESCRIPTION
+Convert HEX to ASCII
+
+.PARAMETER HexString
+HEX as string.
+
+.EXAMPLE
+ConvertFrom-OGHexa -HexString  $NewProfileHex
+
+.NOTES
+    Name:       ConvertFrom-OGHexa
+    Author:     Richie Schuster - SCCMOG.com
+    Original:   https://www.reddit.com/r/PowerShell/comments/48bxto/comment/d0j14hc/?utm_source=share&utm_medium=web2x&context=3
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-31
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-31 Function created
+#>
+function ConvertFrom-OGHexa {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $True,Position = 0,ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [array]$HexString
+    )
+    Write-OGlogentry "Attempting to convert HEX to ASCII"
+    try{
+        $asciiString = [System.Text.Encoding]::Unicode.GetString(($HexString))
+        Write-OGlogentry "Success converting HEX to ASCII. Returning.."
+        return $asciiString
+    }
+    catch{
+        Write-OGlogentry "FAiled converting HEX to ASCII. Error: $_"
+        return $null
+    }
+}
 
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
@@ -307,7 +390,8 @@ $Export = @(
     "Convert-OG2PSObject",
     "New-OGEncryptedStrFile",
     "Get-OGEncryptedStrFile",
-    "Invoke-ExpandString"
+    "Invoke-ExpandString",
+    "Repair-OGXmlString"
 )
 
 foreach ($module in $Export){

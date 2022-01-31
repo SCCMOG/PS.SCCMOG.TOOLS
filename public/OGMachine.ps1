@@ -70,7 +70,7 @@ Function Get-OGOSVersionNT {
         1.0.0 - 2021-08-17 Function created
 #>
 Function Get-OGMSOfficeActiveProcesses {
-    [cmdletbinding()]
+    Write-OGLogEntry "Getting active MS Office Proccesses."
     $ActiveProcesses = Get-Process | Where-Object { (($_.path -like "*\Microsoft Office\*")`
                 -or ($_.ProcessName -like "*lync*")`
                 -or ($_.ProcessName -like "*Outlook*")`
@@ -85,7 +85,14 @@ Function Get-OGMSOfficeActiveProcesses {
                 -or ($_.ProcessName -like "*MSPUB*")`
                 -or ($_.ProcessName -like "*OneDrive*")`
                 -or ($_.ProcessName -like "*CompanyPortal*"))  }
-    Return $ActiveProcesses
+    if ($ActiveProcesses){
+        Write-OGlogentry "Found active MS Office Proccesses [Process: $(($activeO365Apps.ProcessName)-join "][Process: ")]" -logtype Warning
+        Return $ActiveProcesses
+    }
+    else{
+        Write-OGlogentry "No active MS Office Proccesses found."
+        return $false
+    }
 }
 
 <#
