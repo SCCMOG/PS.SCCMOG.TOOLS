@@ -503,13 +503,13 @@ Gets the next available drive letter and can exclude a letter of choice.
 Excluded letter
 
 .EXAMPLE
-Get-AvailableDriveLetter
+Get-OGAvailableDriveLetter
 
 .EXAMPLE
-Get-AvailableDriveLetter -ExcludedLetter E
+Get-OGAvailableDriveLetter -ExcludedLetter E
 
 .NOTES
-    Name:       Get-AvailableDriveLetter
+    Name:       Get-OGAvailableDriveLetter
     Original:   https://stackoverflow.com/a/29373301
     Updated:    Richie Schuster - SCCMOG.com
     GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
@@ -2368,7 +2368,8 @@ $Export = @(
     "Start-OGOneDrive",
     "Stop-OGOneDrive",
     "Stop-OGO365Apps",
-    "Invoke-OGExplorerRefresh"
+    "Invoke-OGExplorerRefresh",
+    "Get-OGAvailableDriveLetter"
 )
 
 foreach ($module in $Export){
