@@ -494,6 +494,50 @@ Function Start-OGCommand (){
 
 <#
 .SYNOPSIS
+Get the next available drive letter
+
+.DESCRIPTION
+Gets the next available drive letter and can exclude a letter of choice.
+
+.PARAMETER ExcludedLetter
+Excluded letter
+
+.EXAMPLE
+Get-AvailableDriveLetter
+
+.EXAMPLE
+Get-AvailableDriveLetter -ExcludedLetter E
+
+.NOTES
+    Name:       Get-AvailableDriveLetter
+    Original:   https://stackoverflow.com/a/29373301
+    Updated:    Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-31
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-31 Function created
+# 
+#>
+Function Get-OGAvailableDriveLetter () {
+    param (
+        [parameter(Mandatory = $false)]
+        [char]$ExcludedLetter
+    )
+    $Letter = [int][char]'C'
+    $i = @()
+    $(Get-PSDrive -PSProvider filesystem) | ForEach-Object { $i += $_.name }
+    $i += $ExcludedLetter
+    while ($i -contains $([char]$Letter)) { $Letter++ }
+    Return $([char]$Letter)
+}
+
+
+<#
+.SYNOPSIS
 Search for a directory
 
 .DESCRIPTION
