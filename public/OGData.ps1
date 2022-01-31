@@ -280,7 +280,7 @@ String containing variable
 Invoke-ExpandString -string "$ENV:ComputerName"
 
 .NOTES
-    Name:       Get-OGEncryptedStrFile
+    Name:       Invoke-ExpandString
     Author:     Richie Schuster - SCCMOG.com
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
@@ -391,7 +391,8 @@ $Export = @(
     "New-OGEncryptedStrFile",
     "Get-OGEncryptedStrFile",
     "Invoke-ExpandString",
-    "Repair-OGXmlString"
+    "Repair-OGXmlString",
+    "ConvertFrom-OGHexa"
 )
 
 foreach ($module in $Export){

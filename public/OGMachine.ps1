@@ -1,6 +1,200 @@
 ##################################################################################################################################
-#  Process Region
+# Process Region
 ##################################################################################################################################
+
+<#
+.SYNOPSIS
+Wait for a process to close
+
+.DESCRIPTION
+This function waits for a process to close. IF the process is not found at runtime it will consider it closed and report so.
+
+.PARAMETER Process
+Name of process to wait for.
+
+.PARAMETER MaxWaitTime
+How long to wait for the process. Default is 60 seconds.
+
+.EXAMPLE
+Wait-OGProcessClose -Process Notepad
+Wait for the process Notepad to close with a default MaxWaitTime of 60s
+
+.EXAMPLE
+Wait-OGProcessClose -Process Notepad -MaxWaitTime 10
+Wait for the process Notepad to close with a MaxWaitTime of 10s
+
+.NOTES
+    Name:       Wait-OGProcessClose       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-09-21
+    Updated:    -
+    
+    Version history:
+    1.0.0 - 2021-09-21 Function created
+#>
+function Wait-OGProcessClose {
+    [cmdletbinding()]
+    param(
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Process,
+        [parameter(Mandatory = $false)]
+        [int]$MaxWaitTime = 60
+    )
+    $RemainingTime = $MaxWaitTime
+    $count = 0
+    Do {
+        $status = Get-Process | Where-Object { $_.Name -like "$process" }
+        If ($status) {
+            $RemainingTime--
+            Write-OGLogEntry "Waiting for process: '$($Process)' with PID: $($status.id) to close. Wait time remaining: $($RemainingTime)s" ; 
+            $closed = $false
+            Start-Sleep -Seconds 1
+            $count++
+        }        
+        Else { 
+            $closed = $true 
+        }
+    }
+    Until (( $closed ) -or ( $count -eq $MaxWaitTime ))
+    if (($closed)-and($count -eq 0)){
+        Write-OGLogEntry "Process: '$($Process)' was not found to be running."
+        return $true
+    }
+    elseif (($closed)-and($count -gt 0)){
+        Write-OGLogEntry "Process: '$($Process)' has closed."
+        return $true
+    }
+    else{
+        Write-OGLogEntry "MaxWaitTime: $($MaxWaitTime) reached waiting for process: '$($Process)' with PID: $($status.id) to close." ;
+        return $false
+    }
+}
+
+<#
+.SYNOPSIS
+Wait for a process to start
+
+.DESCRIPTION
+This function waits for a process to start. IF the process is found at runtime it will consider it started and report so.
+
+.PARAMETER Process
+Name of process to wait for.
+
+.PARAMETER MaxWaitTime
+How long to wait for the process. Default is 60 seconds.
+
+.PARAMETER Kill
+If the process is found within the time period forcefully stop it.
+
+.EXAMPLE
+Wait-OGProcessStart -Process Notepad
+Wait for the process Notepad to start with a default MaxWaitTime of 60s
+
+.EXAMPLE
+Wait-OGProcessStart -Process Notepad -MaxWaitTime 10
+Wait for the process Notepad to start with a MaxWaitTime of 10s
+
+.NOTES
+    Name:       Wait-OGProcessStart       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-09-21
+    Updated:    -
+    
+    Version history:
+    1.0.0 - 2021-09-21 Function created
+#>
+function Wait-OGProcessStart {
+    [cmdletbinding()]
+    param(
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [String]$Process,
+        [parameter(Mandatory = $false)]
+        [int]$MaxWaitTime = 60,
+        [parameter(Mandatory = $false)]
+        [switch]$Kill
+    )
+    $RemainingTime = $MaxWaitTime
+    $count = 0
+    Do {
+        $status = Get-Process | Where-Object { $_.Name -like "$process" }
+        If (!($status)) {
+            $RemainingTime--
+            Write-OGLogEntry "Waiting for process: $($Process) to start. Wait time remaining: $($RemainingTime)s" ; 
+            $started = $false
+            Start-Sleep -Seconds 1
+            $count++
+        }        
+        Else { 
+            $started = $true 
+        }
+    }
+    Until (( $started ) -or ( $count -eq $MaxWaitTime ))
+    if (($started)-and($count -eq 0)){
+        Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) was found to be already running."
+        if ($kill){
+            Write-OGLogEntry "Kill switch set attempting to close: '$($Process)' with PID: $($status.id)"
+            Stop-Process -InputObject $status -Force 
+        }
+        return $true
+    }
+    elseif (($started)-and($count -gt 0)){
+        Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) has started."
+        if ($kill){
+            Write-OGLogEntry "Kill switch set attempting to close: '$($Process)' with PID: $($status.id)"
+            Stop-Process -InputObject $status -Force
+        }
+        return $true
+    }
+    else{
+        Write-OGLogEntry "MaxWaitTime: $($MaxWaitTime) reached waiting for process: $($Process) to start." ;
+        return $false
+    }
+}
+
+<#
+.SYNOPSIS
+Refresh Explorer
+
+.DESCRIPTION
+Refresh Explorer Process
+
+.PARAMETER KickStart
+If explorer process does not auto restart. Kick it into gear.
+
+.EXAMPLE
+Invoke-OGExplorerRefresh -KickStart
+
+.EXAMPLE
+Invoke-OGExplorerRefresh
+
+.NOTES
+General notes
+#>
+function Invoke-OGExplorerRefresh {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [switch]$KickStart
+    )
+    Write-OGLogEntry "Refreshing explorer."
+    Get-Process -Name explorer |  Stop-Process -Force
+    if ($KickStart) {
+        Start-sleep -Seconds 2
+        if (!(Get-Process -Name explorer)) {
+            Start-Process Explorer.exe
+        }
+    }
+    Write-OGLogEntry "Explorer Refresh complete."
+}
+
 
 <#
 .SYNOPSIS
@@ -93,6 +287,124 @@ Function Get-OGMSOfficeActiveProcesses {
         Write-OGlogentry "No active MS Office Proccesses found."
         return $false
     }
+}
+
+
+<#
+.SYNOPSIS
+Kills Office 365 Ent Apps
+
+.DESCRIPTION
+Kills Office 365 Ent Apps and gracefully shutsdown OneDrive.
+
+.PARAMETER activeO365Apps
+PS Object of 365 processes.
+
+.EXAMPLE
+Stop-OGO365Apps -activeO365Apps $ActiveO365Apps
+
+.NOTES
+    Name:       Stop-OGO365Apps
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-31
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-31 Function created
+#>
+function Stop-OGO365Apps {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $True)]
+        [ValidateNotNullOrEmpty()]
+        [psobject]$activeO365Apps
+    )
+    foreach ($proc in $activeO365Apps) {
+        if (!($proc.name -like "OneDrive")) {
+            $kill = $null
+            IF ($kill = Get-Process -Id $proc.Id) {
+                Write-OGLogEntry "Stopping Process [Name: $($kill.Name)][Path: $($kill.Path)]"
+                Stop-Process -InputObject $kill -Force | Out-Null
+                Write-OGLogEntry "Stopped Process [Name: $($kill.Name)][Path: $($kill.Path)]"
+            }
+        }
+        else {
+            Stop-OGOneDrive
+        }
+    }
+}
+
+
+<#
+.SYNOPSIS
+Gracefully stop OneDrive Client
+
+.DESCRIPTION
+Gracefully stop OneDrive Client
+
+.EXAMPLE
+Stop-OGOneDrive
+
+.NOTES
+    Name:       Stop-OGOneDrive
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-31
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-31 Function created
+#>
+function Stop-OGOneDrive {
+    $p = $null
+    $p = Get-Process | Where-object { $_.Name -like "OneDrive" }
+    if ($p) {
+        Write-OGLogEntry "Found OneDrive process. Closing gracefully [CMD: $($p.path) /shutdown]"
+        & $p.path /shutdown
+        Write-OGLogEntry "OneDrive process gracefully closed [CMD: $($p.path) /shutdown]"
+    }
+    else{
+        Write-OGLogEntry "No OneDrive process found to close."
+    }
+}
+
+<#
+.SYNOPSIS
+Start the OneDrive client in the Background
+
+.DESCRIPTION
+Start the OneDrive client in the Background
+
+.EXAMPLE
+Start-OGOneDrive
+
+.NOTES
+    Name:       Start-OGOneDrive
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-31
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-31 Function created
+#>
+function Start-OGOneDrive {
+    $OneDrivePaths = "$($env:ProgramFiles)\Microsoft OneDrive\OneDrive.exe",
+    "$(${env:ProgramFiles(x86)})\Microsoft OneDrive\OneDrive.exe"
+    foreach ($path in $OneDrivePaths) {
+        Write-OGLogEntry "Check for OneDrive.exe [Path: $($path)]"
+        if (Test-OGFilePath -Path $path) {
+            Write-OGLogEntry "Found OneDrive.exe launching [CMD: $($path) /background]"
+            & $path /background
+            Write-OGLogEntry "Launched OneDrive.exe [CMD: $($path) /background]"
+            break
+        }
+    }
+    Write-OGLogEntry "Did not find OneDrive.exe."
 }
 
 <#
@@ -1445,169 +1757,6 @@ Function New-OGContainer {
 ##################################################################################################################################
 ##################################################################################################################################
 ##################################################################################################################################
-# Process Region
-##################################################################################################################################
-
-<#
-.SYNOPSIS
-Wait for a process to close
-
-.DESCRIPTION
-This function waits for a process to close. IF the process is not found at runtime it will consider it closed and report so.
-
-.PARAMETER Process
-Name of process to wait for.
-
-.PARAMETER MaxWaitTime
-How long to wait for the process. Default is 60 seconds.
-
-.EXAMPLE
-Wait-OGProcessClose -Process Notepad
-Wait for the process Notepad to close with a default MaxWaitTime of 60s
-
-.EXAMPLE
-Wait-OGProcessClose -Process Notepad -MaxWaitTime 10
-Wait for the process Notepad to close with a MaxWaitTime of 10s
-
-.NOTES
-    Name:       Wait-OGProcessClose       
-	Author:     Richie Schuster - SCCMOG.com
-    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
-    Website:    https://www.sccmog.com
-    Contact:    @RichieJSY
-    Created:    2021-09-21
-    Updated:    -
-    
-    Version history:
-    1.0.0 - 2021-09-21 Function created
-#>
-function Wait-OGProcessClose {
-    [cmdletbinding()]
-    param(
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [String]$Process,
-        [parameter(Mandatory = $false)]
-        [int]$MaxWaitTime = 60
-    )
-    $RemainingTime = $MaxWaitTime
-    $count = 0
-    Do {
-        $status = Get-Process | Where-Object { $_.Name -like "$process" }
-        If ($status) {
-            $RemainingTime--
-            Write-OGLogEntry "Waiting for process: '$($Process)' with PID: $($status.id) to close. Wait time remaining: $($RemainingTime)s" ; 
-            $closed = $false
-            Start-Sleep -Seconds 1
-            $count++
-        }        
-        Else { 
-            $closed = $true 
-        }
-    }
-    Until (( $closed ) -or ( $count -eq $MaxWaitTime ))
-    if (($closed)-and($count -eq 0)){
-        Write-OGLogEntry "Process: '$($Process)' was not found to be running."
-        return $true
-    }
-    elseif (($closed)-and($count -gt 0)){
-        Write-OGLogEntry "Process: '$($Process)' has closed."
-        return $true
-    }
-    else{
-        Write-OGLogEntry "MaxWaitTime: $($MaxWaitTime) reached waiting for process: '$($Process)' with PID: $($status.id) to close." ;
-        return $false
-    }
-}
-
-<#
-.SYNOPSIS
-Wait for a process to start
-
-.DESCRIPTION
-This function waits for a process to start. IF the process is found at runtime it will consider it started and report so.
-
-.PARAMETER Process
-Name of process to wait for.
-
-.PARAMETER MaxWaitTime
-How long to wait for the process. Default is 60 seconds.
-
-.PARAMETER Kill
-If the process is found within the time period forcefully stop it.
-
-.EXAMPLE
-Wait-OGProcessStart -Process Notepad
-Wait for the process Notepad to start with a default MaxWaitTime of 60s
-
-.EXAMPLE
-Wait-OGProcessStart -Process Notepad -MaxWaitTime 10
-Wait for the process Notepad to start with a MaxWaitTime of 10s
-
-.NOTES
-    Name:       Wait-OGProcessStart       
-	Author:     Richie Schuster - SCCMOG.com
-    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
-    Website:    https://www.sccmog.com
-    Contact:    @RichieJSY
-    Created:    2021-09-21
-    Updated:    -
-    
-    Version history:
-    1.0.0 - 2021-09-21 Function created
-#>
-function Wait-OGProcessStart {
-    [cmdletbinding()]
-    param(
-        [parameter(Mandatory = $true)]
-        [ValidateNotNullOrEmpty()]
-        [String]$Process,
-        [parameter(Mandatory = $false)]
-        [int]$MaxWaitTime = 60,
-        [parameter(Mandatory = $false)]
-        [switch]$Kill
-    )
-    $RemainingTime = $MaxWaitTime
-    $count = 0
-    Do {
-        $status = Get-Process | Where-Object { $_.Name -like "$process" }
-        If (!($status)) {
-            $RemainingTime--
-            Write-OGLogEntry "Waiting for process: $($Process) to start. Wait time remaining: $($RemainingTime)s" ; 
-            $started = $false
-            Start-Sleep -Seconds 1
-            $count++
-        }        
-        Else { 
-            $started = $true 
-        }
-    }
-    Until (( $started ) -or ( $count -eq $MaxWaitTime ))
-    if (($started)-and($count -eq 0)){
-        Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) was found to be already running."
-        if ($kill){
-            Write-OGLogEntry "Kill switch set attempting to close: '$($Process)' with PID: $($status.id)"
-            Stop-Process -InputObject $status -Force 
-        }
-        return $true
-    }
-    elseif (($started)-and($count -gt 0)){
-        Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) has started."
-        if ($kill){
-            Write-OGLogEntry "Kill switch set attempting to close: '$($Process)' with PID: $($status.id)"
-            Stop-Process -InputObject $status -Force
-        }
-        return $true
-    }
-    else{
-        Write-OGLogEntry "MaxWaitTime: $($MaxWaitTime) reached waiting for process: $($Process) to start." ;
-        return $false
-    }
-}
-##################################################################################################################################
-# END Process Region
-##################################################################################################################################
-##################################################################################################################################
 ##################################################################################################################################
 #  Scheduled Task Region
 ##################################################################################################################################
@@ -2056,6 +2205,83 @@ Function Remove-OGService () {
         return $false
     }
 }
+
+<#
+.SYNOPSIS
+Start a service and wait for it.
+
+.DESCRIPTION
+Starts a service and wait for it..
+
+.PARAMETER ServiceName
+Name of service to start.
+
+.PARAMETER WaitTime
+Time in seconds to wait. Default 20s
+
+.EXAMPLE
+Invoke-OGStartandWaitService -ServiceName $ServiceName
+
+.NOTES
+    Name:       Invoke-OGStartandWaitService
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-01-31
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-01-31 Function created
+#>
+Function Invoke-OGStartandWaitService {
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory = $True)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ServiceName,
+        [Parameter(Mandatory = $false)]
+        [int]$WaitTime = 20
+    )
+    $objService = $null
+    $objService = Get-Service | Where-object { $_.Name -like "$($ServiceName)" }
+    if (!($objService)) {
+        Write-OGLogEntry "Service not found [Name : $($ServiceName))]"
+        return $false
+    }
+    if ($objService.Status -ne 'Running') {
+        Write-OGLogEntry "Service found but not running. [Name : $($objService.Name))][Display Name : $($objService.DisplayName))][Status : $($objService.Status))]"
+        Write-OGLogEntry "Service Not Started. Attempting to start, waiting maximum of 20 Seconds. [Name : $($objService.Name))]"
+        Start-Service $ServiceName
+        $timestart = Get-Date
+        $WaitTime = 20
+        $timeEnd = $TimeStart.addseconds($WaitTime)
+        Do {
+            Write-OGLogEntry "Waiting for service to start. [Name : $($objService.Name))]"
+            $now = Get-Date		
+            if ($Now -gt $TimeEnd) {
+                $MaxWait = $True
+            }
+            else {
+                $MaxWait = $False
+            }
+            $objService.Refresh()
+            Start-Sleep -Seconds 1
+        } Until (($objService.Status -eq 'Running') -Or ($MaxWait -eq $True))
+        $objService.Refresh()
+        if ($objService.Status -eq 'Running') {
+            Write-OGLogEntry "Service now started [Name : $($objService.Name))][Display Name : $($objService.DisplayName))][Status : $($objService.Status))]"
+            return $True
+        }
+        else {
+            Write-OGLogEntry "Service failed to start [Name : $($objService.Name))][Display Name : $($objService.DisplayName))][Status : $($objService.Status))]"
+            return $false
+        }
+    }
+    else {
+        Write-OGLogEntry "Service running [Name : $($objService.Name))][Display Name : $($objService.DisplayName))][Status : $($objService.Status))]"
+        return $True
+    }
+}
 ##################################################################################################################################
 # End Service Region
 ##################################################################################################################################
@@ -2093,7 +2319,12 @@ $Export = @(
     "Get-OGFileLocation",
     "Get-OGFolderLocation",
     "Export-OGFileDetails",
-    "Wait-OGScheduledTask"
+    "Wait-OGScheduledTask",
+    "Invoke-OGStartandWaitService",
+    "Start-OGOneDrive",
+    "Stop-OGOneDrive",
+    "Stop-OGO365Apps",
+    "Invoke-OGExplorerRefresh"
 )
 
 foreach ($module in $Export){
