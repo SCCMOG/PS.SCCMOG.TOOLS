@@ -280,7 +280,7 @@ Function Get-OGMSOfficeActiveProcesses {
                 -or ($_.ProcessName -like "*OneDrive*")`
                 -or ($_.ProcessName -like "*CompanyPortal*"))  }
     if ($ActiveProcesses){
-        Write-OGlogentry "Found active MS Office Proccesses [Process: $(($activeO365Apps.ProcessName)-join "][Process: ")]" -logtype Warning
+        Write-OGlogentry "Found active MS Office Proccesses [Process: $(($ActiveProcesses.ProcessName)-join "][ Process: ")]" -logtype Warning
         Return $ActiveProcesses
     }
     else{
@@ -288,7 +288,6 @@ Function Get-OGMSOfficeActiveProcesses {
         return $false
     }
 }
-
 
 <#
 .SYNOPSIS
