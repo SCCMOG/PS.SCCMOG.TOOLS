@@ -323,10 +323,14 @@ function Stop-OGO365Apps {
     foreach ($proc in $activeO365Apps) {
         if (!($proc.name -like "OneDrive")) {
             $kill = $null
-            IF ($kill = Get-Process -Id $proc.Id) {
+            $kill = Get-Process | Where-Object {$_.id -eq $proc.Id}
+            IF ($kill) {
                 Write-OGLogEntry "Stopping Process [Name: $($kill.Name)][Path: $($kill.Path)]"
                 Stop-Process -InputObject $kill -Force | Out-Null
                 Write-OGLogEntry "Stopped Process [Name: $($kill.Name)][Path: $($kill.Path)]"
+            }
+            else{
+                Write-OGLogEntry "Process already stopped [Name: $($proc.Name)][Path: $($proc.Path)]"
             }
         }
         else {
