@@ -1,5 +1,57 @@
 #region Permissions
 
+<#
+.SYNOPSIS
+Short description
+
+.DESCRIPTION
+Long description
+
+.PARAMETER Path
+Parameter description
+
+.EXAMPLE
+Get-APMPerms -Path C:\testfolder
+
+.NOTES
+General notes
+#>
+function Get-APMPerms {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path
+    )
+    if (!(checkAdminRights)){
+        $eM = "User or process not running as Local Administrator"
+        Write-OGLogEntry $eM -logtype Error
+        throw "$($eM)"
+    }
+    if (!(Test-Path $Path -PathType Container)){
+        $eM = "No path found at [Path: $($Path)]"
+        Write-OGLogEntry $eM -logtype Error
+        throw "$($eM)"
+    }
+    $BuiltinUsersSID = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-545'
+    Write-OGLogEntry "Translating built in Users group [SID: $BuiltinUsersSID]"
+    $BuiltinUsersGroup = $BuiltinUsersSID.Translate([System.Security.Principal.NTAccount])
+    Write-OGLogEntry "Translated built in Users group [Name: $BuiltinUsersGroup]"
+    $ACL = get-acl $Path
+    $PermFound = $false
+    Write-OGLogEntry "Checking permisions for path: [Path: $($Path)] [IdentityReference: $($BuiltinUsersGroup)]"
+    foreach ($al in $ACL.Access){
+        if ($al.IdentityReference -contains "$($BuiltinUsersGroup)"){
+            if($al.FileSystemRights -contains "FullControl"){
+                Write-OGLogEntry "Full control found: [Path: $($Path)] [IdentityReference: $($BuiltinUsersGroup)] [FileSystemRights: $($al.FileSystemRights)] [InheritanceFlags: $($al.InheritanceFlags)]"
+                $PermFound = $true
+                return $PermFound
+            }
+        }
+    }
+    Write-OGLogEntry "Full control NOT found: [Path: $($Path)] [IdentityReference: $($BuiltinUsersGroup)]" -logtype Warning
+    return $PermFound
+}
 
 
 <#
@@ -32,14 +84,18 @@ Sets full control to the Builtin Users Group to HKLM:\Software\SCCMOG recursive
     
     Version history:
     1.0.0 - 2022-02-09 Function created
+    1.1.0 - 2022-02-09 Added RegistryAccessRule or FileSystemAccessRule switch.
 #>
 function Set-OGFullControlUsers {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0)]
         [ValidateNotNullOrEmpty()]
-        [string]
-        $Path
+        [string]$Path,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 1)]
+        [ValidateSet("Dir","Reg")]
+        [ValidateNotNullOrEmpty()]
+        [string]$Type
     )
     if (!(checkAdminRights)){
         $eM = "User or process not running as Local Administrator"
@@ -58,20 +114,31 @@ function Set-OGFullControlUsers {
     Write-OGLogEntry "Getting current permisions for [Path: $($Path)]"
     $ACL = Get-Acl "$($Path)"
     Write-OGLogEntry "Current permisions for [Path: $($Path)][Owner: $($ACL.Owner)]"
-    $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("$($BuiltinUsersGroup.Value)",
-        "FullControl",
-        'ContainerInherit,ObjectInherit',
-        'None',
-        "Allow")
+    switch ($Type) {
+        "Reg" {  
+            $AccessRule = New-Object System.Security.AccessControl.RegistryAccessRule("$($BuiltinUsersGroup.Value)",
+            "FullControl",
+            'ContainerInherit,ObjectInherit',
+            'None',
+            "Allow")
+        }
+        "Dir" {
+            $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("$($BuiltinUsersGroup.Value)",
+            "FullControl",
+            'ContainerInherit,ObjectInherit',
+            'None',
+            "Allow")
+        }
+    }
     try{
-        Write-OGLogEntry "Setting full control for [Path: $($Path)] [Group: $($BuiltinUsersGroup)]" 
+        Write-OGLogEntry "Setting full control for [$($Type) Path: $($Path)] [Group: $($BuiltinUsersGroup)]" 
         $ACL.SetAccessRule($AccessRule)
         $ACL | Set-Acl $Path -ErrorAction stop
-        Write-OGLogEntry "Success setting full control recursive for [Path: $($Path)] [Group: $($BuiltinUsersGroup)]"
+        Write-OGLogEntry "Success setting full control recursive for [$($Type) Path: $($Path)] [Group: $($BuiltinUsersGroup)]"
         return $true
     }
     catch{
-        $eM = "Failed setting full control recursive for [Path: $($Path)] [Group: $($BuiltinUsersGroup)]. Error: $_" 
+        $eM = "Failed setting full control recursive for [$($Type) Path: $($Path)] [Group: $($BuiltinUsersGroup)]. Error: $_" 
         Write-OGLogEntry $em -logtype Error
         throw $eM
     }
