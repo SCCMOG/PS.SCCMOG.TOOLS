@@ -62,8 +62,14 @@ Eror Message to write.
 .PARAMETER APM_Module
 APM Module
 
+.PARAMETER throw
+throw the current execution also.
+
 .EXAMPLE
 New-OGAPMError -ErrorMsg "There has been an error" -APM_Module "Inventory"
+
+.EXAMPLE
+New-OGAPMError -ErrorMsg "There has been an error" -APM_Module "Inventory" -throw
 
 .NOTES
     Name:       New-OGAPMError 
@@ -83,7 +89,9 @@ function New-OGAPMError {
         [Parameter(Mandatory = $true)]
         [string]$ErrorMsg,
         [Parameter(Mandatory = $true)]
-        [string]$APM_Module
+        [string]$APM_Module,
+        [Parameter(Mandatory = $false)]
+        [switch]$throw
     )
     $msg = "$($ErrorMsg)"
     Write-OGLogEntry $msg -logtype Error
@@ -94,6 +102,10 @@ function New-OGAPMError {
     New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_Error" -Value "$($msg)"
     New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_ErrorTimeStamp" -Value "$($ErrorTimeStamp)"
     New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_Complete" -Value "$($false)"
+    if ($throw){
+        Write-OGLogEntry -logtype Footer
+        throw $msg
+    }
 }
 
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name

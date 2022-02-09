@@ -1,3 +1,85 @@
+#region Permissions
+
+
+
+<#
+.SYNOPSIS
+Set full control to local user group to path.
+
+.DESCRIPTION
+Set full control to local user group to path. Also translates group name for alternate language os.
+Must be running as Adminstrator process or local system.
+
+.PARAMETER Path
+Path to set perms
+
+.EXAMPLE
+Set-OGFullControl -Path C:\Admin
+Sets full control to the Builtin Users Group to c:\Admin recursive
+
+.EXAMPLE
+Set-OGFullControl -Path HKLM:\Software\SCCMOG
+Sets full control to the Builtin Users Group to HKLM:\Software\SCCMOG recursive
+
+.NOTES
+    Name:       Set-OGFullControl       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-02-09
+    Updated:    -
+    
+    Version history:
+    1.0.0 - 2022-02-09 Function created
+#>
+function Set-OGFullControl {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $Path
+    )
+    if (!(checkAdminRights)){
+        $eM = "User or process not running as Local Administrator"
+        Write-OGLogEntry $eM -logtype Error
+        throw "$($eM)"
+    }
+    if (!(Test-Path $Path -PathType Container)){
+        $eM = "No path found at [Path: $($Path)]"
+        Write-OGLogEntry $eM -logtype Error
+        throw "$($eM)"
+    }
+    $BuiltinUsersSID = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-545'
+    Write-OGLogEntry "Translating built in Users group [SID: $BuiltinUsersSID]"
+    $BuiltinUsersGroup = $BuiltinUsersSID.Translate([System.Security.Principal.NTAccount])
+    Write-OGLogEntry "Translated built in Users group [Name: $BuiltinUsersGroup]"
+    Write-OGLogEntry "Getting current permisions for [Path: $($Path)]"
+    $PAth = "C:\ProgramData\Epic"
+    $ACL = Get-Acl "$($Path)"
+    Write-OGLogEntry "Current permisions for [Path: $($Path)][Owner: $($ACL.Owner)]"
+    $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("$($BuiltinUsersGroup.Value)",
+        "FullControl",
+        'ContainerInherit,ObjectInherit',
+        'None',
+        "Allow")
+    try{
+        Write-OGLogEntry "Setting full control for [Path: $($Path)] [Group: $($BuiltinUsersGroup)]" 
+        $ACL.SetAccessRule($AccessRule)
+        $ACL | Set-Acl $Path -ErrorAction stop
+        Write-OGLogEntry "Success setting full control recursive for [Path: $($Path)] [Group: $($BuiltinUsersGroup)]"
+        return $true
+    }
+    catch{
+        $eM = "Failed setting full control recursive for [Path: $($Path)] [Group: $($BuiltinUsersGroup)]. Error: $_" 
+        Write-OGLogEntry $em -logtype Error
+        throw $eM
+    }
+}
+
+
+#endregion permissions
 ##################################################################################################################################
 # Process Region
 ##################################################################################################################################
@@ -60,11 +142,11 @@ function Wait-OGProcessClose {
         }
     }
     Until (( $closed ) -or ( $count -eq $MaxWaitTime ))
-    if (($closed)-and($count -eq 0)){
+    if (($closed) -and ($count -eq 0)){
         Write-OGLogEntry "Process: '$($Process)' was not found to be running."
         return $true
     }
-    elseif (($closed)-and($count -gt 0)){
+    elseif (($closed) -and ($count -gt 0)){
         Write-OGLogEntry "Process: '$($Process)' has closed."
         return $true
     }
@@ -137,7 +219,7 @@ function Wait-OGProcessStart {
         }
     }
     Until (( $started ) -or ( $count -eq $MaxWaitTime ))
-    if (($started)-and($count -eq 0)){
+    if (($started) -and ($count -eq 0)){
         Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) was found to be already running."
         if ($kill){
             Write-OGLogEntry "Kill switch set attempting to close: '$($Process)' with PID: $($status.id)"
@@ -145,7 +227,7 @@ function Wait-OGProcessStart {
         }
         return $true
     }
-    elseif (($started)-and($count -gt 0)){
+    elseif (($started) -and ($count -gt 0)){
         Write-OGLogEntry "Process: '$($Process)' with PID: $($status.id) has started."
         if ($kill){
             Write-OGLogEntry "Kill switch set attempting to close: '$($Process)' with PID: $($status.id)"
@@ -187,7 +269,7 @@ function Invoke-OGExplorerRefresh {
     Write-OGLogEntry "Refreshing explorer."
     Get-Process -Name explorer |  Stop-Process -Force
     if ($KickStart) {
-        Start-sleep -Seconds 2
+        Start-sleep -Seconds 4
         if (!(Get-Process -Name explorer)) {
             Start-Process Explorer.exe
         }
@@ -278,7 +360,7 @@ Function Get-OGMSOfficeActiveProcesses {
                 -or ($_.ProcessName -like "*MSACCESS*")`
                 -or ($_.ProcessName -like "*MSPUB*")`
                 -or ($_.ProcessName -like "*OneDrive*")`
-                -or ($_.ProcessName -like "*CompanyPortal*"))  }
+                -or ($_.ProcessName -like "*CompanyPortal*")) }
     if ($ActiveProcesses){
         Write-OGlogentry "Found active MS Office Proccesses [Process: $(($ActiveProcesses.ProcessName)-join "][ Process: ")]" -logtype Warning
         Return $ActiveProcesses
@@ -323,7 +405,7 @@ function Stop-OGO365Apps {
     foreach ($proc in $activeO365Apps) {
         if (!($proc.name -like "OneDrive")) {
             $kill = $null
-            $kill = Get-Process | Where-Object {$_.id -eq $proc.Id}
+            $kill = Get-Process | Where-Object { $_.id -eq $proc.Id }
             IF ($kill) {
                 Write-OGLogEntry "Stopping Process [Name: $($kill.Name)][Path: $($kill.Path)]"
                 Stop-Process -InputObject $kill -Force | Out-Null
@@ -474,9 +556,9 @@ Function Start-OGCommand (){
         }
         $OutPut = [pscustomobject]@{
             commandTitle = $Title
-            stdout = $p.StandardOutput.ReadToEnd()
-            stderr = $p.StandardError.ReadToEnd()
-            ExitCode = $p.ExitCode  
+            stdout       = $p.StandardOutput.ReadToEnd()
+            stderr       = $p.StandardError.ReadToEnd()
+            ExitCode     = $p.ExitCode  
         }
         Write-OGLogEntry "Success Executing [$($Title): '$($Path) $($Arguments)'] [Wait: $($Wait)] [Exit Code: $($OutPut.ExitCode)]"
         return $OutPut
@@ -596,13 +678,13 @@ function Get-OGFolderLocation (){
     foreach ($dir in $DirFound){
         $objDir = $null
         $objDir = [PSCustomObject]@{
-            Name = $dir.Name
-            FullName = $dir.FullName
-            Parent = $dir.Parent
-            Root = $dir.Root
-            CreationTime = $dir.CreationTime
+            Name           = $dir.Name
+            FullName       = $dir.FullName
+            Parent         = $dir.Parent
+            Root           = $dir.Root
+            CreationTime   = $dir.CreationTime
             LastAccessTime = $dir.LastAccessTime
-            LastWriteTime = $dir.LastWriteTime
+            LastWriteTime  = $dir.LastWriteTime
         }
         $Found += $objDir
     }
@@ -675,14 +757,14 @@ function Get-OGFileLocation (){
             $objFile = $null
             $FileDetails = Get-Item $FileFound.FullName
             $objFile = [PSCustomObject]@{
-                Name = $FileDetails.Name
-                FullName = $FileDetails.FullName
-                Directory = $FileDetails.Directory
-                Size = $FileDetails.Length
-                Extension = $FileDetails.Extension
-                CreationTime = $FileDetails.CreationTime
+                Name           = $FileDetails.Name
+                FullName       = $FileDetails.FullName
+                Directory      = $FileDetails.Directory
+                Size           = $FileDetails.Length
+                Extension      = $FileDetails.Extension
+                CreationTime   = $FileDetails.CreationTime
                 LastAccessTime = $FileDetails.LastAccessTime
-                LastWriteTime = $FileDetails.LastWriteTime
+                LastWriteTime  = $FileDetails.LastWriteTime
             }
             if (!$All){
                 Write-OGLogEntry "Found [File: $($Name)] at [Path: $($objFile.Directory)] [All Locations: $All]"
@@ -754,7 +836,7 @@ function Get-OGTempStorage(){
         start-sleep -Milliseconds 300
         $MaxReps++
     }
-    Until((test-path $tempStorage)-or($MaxReps -eq 100))
+    Until((test-path $tempStorage) -or ($MaxReps -eq 100))
     if($MaxReps -eq 100){
         throw "Creating Temp file/folder timed out."
     }
@@ -1560,31 +1642,31 @@ function Export-OGFileDetails {
         [parameter(Mandatory = $true)]
         [object]$Files
     )
-        Write-OGLogEntry "Begining file data organisation"
-        $List = New-Object System.Collections.Generic.List[System.Object]
-        try{
-            foreach ($rootDir in $Files) {
-                if ($rootDir -notlike $null) {
-                    foreach ($file in $rootDir) {
-                        $List.Add([PSCustomObject]@{
-                                Name          = $file.Name
-                                FullName      = $file.FullName
-                                Directory     = $file.Directory
-                                Size          = $file.Length
-                                CreationTime  = $file.CreationTime
-                                LastWriteTime = $file.LastWriteTime 
-                            })
-                    }
+    Write-OGLogEntry "Begining file data organisation"
+    $List = New-Object System.Collections.Generic.List[System.Object]
+    try{
+        foreach ($rootDir in $Files) {
+            if ($rootDir -notlike $null) {
+                foreach ($file in $rootDir) {
+                    $List.Add([PSCustomObject]@{
+                            Name          = $file.Name
+                            FullName      = $file.FullName
+                            Directory     = $file.Directory
+                            Size          = $file.Length
+                            CreationTime  = $file.CreationTime
+                            LastWriteTime = $file.LastWriteTime 
+                        })
                 }
             }
-            Write-OGLogEntry "Fiile data organisation complete returning object."
-            return $($List)
         }
-        catch{
-            $message = "Failed during data organisation. Error: $_"
-            Write-OGLogEntry $message -logtype error
-            throw $message
-        } 
+        Write-OGLogEntry "Fiile data organisation complete returning object."
+        return $($List)
+    }
+    catch{
+        $message = "Failed during data organisation. Error: $_"
+        Write-OGLogEntry $message -logtype error
+        throw $message
+    } 
 }
 
 
@@ -1652,9 +1734,9 @@ function Export-OGFileDetailstoCSV {
             $List | Export-Csv "$($CompletePath)" -NoClobber -NoTypeInformation -Force
             Write-OGLogEntry "Success exporting data to CSV: '$($CompletePath)'"
             $objExportDetails = ([PSCustomObject]@{
-                Path          = $CompletePath
-                TotalFiles    = $List.Count
-            })
+                    Path       = $CompletePath
+                    TotalFiles = $List.Count
+                })
             return $($objExportDetails)
         }
         catch{
@@ -1799,6 +1881,236 @@ Function New-OGContainer {
         throw $message
     }
 }
+
+
+
+<#
+.SYNOPSIS
+Exports specified users Edge Bookmarks to HTML object or File.
+
+.DESCRIPTION
+Exports specified users Edge Bookmarks to HTML object or File.
+
+.PARAMETER UserLocalAppData
+Path to the the user Local AppData
+
+.PARAMETER Bulk
+Specify to export ALL found edge profiles
+
+.PARAMETER USER_SID
+User SID for for export
+
+.PARAMETER Export
+Should the data be exported to a file.
+
+.PARAMETER ExportRoot
+If wanting to export as an HTML file, folder that the file should be created in.
+
+.EXAMPLE
+Export-OGEdgeBookmarksHTML -Bulk -USER_SID "S-1-5-21-1291184173-2927567776-2264912970-1001" -Export -ExportRoot "c:\admin"
+Exports all profiles bookmarks for the supplied user SID.
+
+.EXAMPLE
+$HTML = Export-OGEdgeBookmarksHTML -UserLocalAppData $env:LOCALAPPDATA
+Exports single user default path to HTML Object
+
+.EXAMPLE
+Export-OGEdgeBookmarksHTML -UserLocalAppData $env:LOCALAPPDATA -ExportRoot C:\admin -Export
+Exports to HTML File in c:\Admin
+
+
+
+.NOTES
+    Name:       Export-OGEdgeBookmarksHTML
+    Original:   https://github.com/gunnarhaslinger/Microsoft-Edge-based-on-Chromium-Scripts
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-02-09
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2022-02-09 Function created
+#>
+function Export-OGEdgeBookmarksHTML {
+    [cmdletbinding(DefaultParameterSetName = 'UserPath')]            
+    param(                    
+        [parameter(Mandatory = $true, ParameterSetName = 'UserPath')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'UserExport')]
+        [ValidateNotNullOrEmpty()]
+        [string]$UserLocalAppData,
+        [Parameter(Mandatory = $true, ParameterSetName = 'AutoExport')]
+        [ValidateNotNullOrEmpty()]
+        [switch]$Bulk,
+        [Parameter(Mandatory = $true, ParameterSetName = 'AutoExport')]
+        [ValidateNotNullOrEmpty()]
+        [string]$USER_SID,
+        [parameter(Mandatory = $true, ParameterSetName = 'UserExport')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'AutoExport')]
+        [ValidateNotNullOrEmpty()]
+        [switch]$Export,
+        [parameter(Mandatory = $true, ParameterSetName = 'UserExport')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'AutoExport')]
+        [ValidateNotNullOrEmpty()]
+        [string]$ExportRoot
+    )
+    if ($Export) {
+        if(!(Test-OGContainerPath -Path $ExportRoot)){
+            $eM = "Destination-Path $ExportRoot does not exist!"
+            Write-OGLogEntry $eM -logtype Error
+            break
+        }
+        $ExportedTime = Get-Date -Format 'yyyy-MM-dd_HH.mm'
+    }
+    $arrayCurrentProfiles = @()
+    if ($UserLocalAppData){
+        $EdgeProfilePath = "$($UserLocalAppData)\Microsoft\Edge\User Data\Default"
+        $BookMarksPath = "$($EdgeProfilePath)\Bookmarks"
+        if (!(Test-OGFilePath -Path $BookMarksPath)) {
+            $eM = "MS Edge BookMark Source-File Path $BookMarksPath does not exist!" 
+            Write-OGLogEntry $eM -logtype Error
+            break
+        }
+
+        $TempFilePath = $null
+        $TempFilePath = Get-OGTempStorage -File
+        $arrayCurrentProfiles = [PSCustomObject]@{
+            Name         = "Default"
+            ShortcutName = "Default"
+            Path         = "$($EdgeProfilePath)"
+            Bookmarks    = "$($BookMarksPath)"
+            RegPath      = ""
+            TempFile     = "$($TempFilePath)"
+            ExportFile   = "$($ExportRoot)\Edge-Bookmarks_Default_bk_$($ExportedTime).html"
+        }
+
+    }
+
+    if ($Bulk){
+        $regProfilesPath = "HKU:\$($USER_SID)\Software\Microsoft\Edge\Profiles"
+        if (!(Get-PSDrive | Where-Object { $_.Name -eq "HKU" })) { New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null }
+        if (Test-OGRegistryKey -RegKey $regProfilesPath) {
+            $regProfiles = Get-ChildItem -Path "$($regProfilesPath)" | Where-Object { ($_.PSIsContainer) }
+            if (($regProfiles | Measure-Object).Count -gt 0){
+                foreach ($profile in $regProfiles) {
+                    $profilePath = $null
+                    $objProfile = $null
+                    $wProfile = $null
+                    $profilePath = $(($profile.Name).Replace('HKEY_USERS', 'HKU:'))
+                    $wProfile = Get-OGRegistryKey -RegKey "$($profilePath)"
+                    If (Test-OGFilePath "$($wProfile.Path)\BookMarks") {
+                        $TempFilePath = $null
+                        $TempFilePath = Get-OGTempStorage -File
+                        $ExportFile = $null
+
+                        $ExportFile = "$($ExportRoot)\Edge-Bookmarks_$($wProfile.PSChildName)_bk_$($ExportedTime).html"
+                        $objProfile = [PSCustomObject]@{
+                            Name         = $wProfile.PSChildName
+                            ShortcutName = $wProfile.ShortcutName
+                            Path         = $wProfile.Path
+                            Bookmarks    = "$($wProfile.Path)\BookMarks"
+                            RegPath      = "$($profilePath)"
+                            TempFile     = "$($TempFilePath)"
+                            ExportFile   = "$($ExportFile)"
+                        }
+                        $arrayCurrentProfiles += $objProfile
+                    }
+                    else{
+                        Write-OGLogEntry "No Bookmark file found at [Path: $($wProfile.Path)\Bookmarks]"
+                    }
+                }
+            }
+            else{
+                $eM = "User has no MS Edge profiles. [SID: $($USER_SID)]"
+                Write-OGLogEntry $eM -logtype Error
+                break
+            }
+        }
+        else {
+            $eM = "User has no MS Edge profiles. [SID: $($USER_SID)]"
+            Write-OGLogEntry $eM -logtype Error
+            break
+        }
+    }
+
+        # ---- HTML Header ----
+        $BookmarksHTML_Header = @'
+<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!-- This is an automatically generated file.
+     It will be read and overwritten.
+     DO NOT EDIT! -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Bookmarks</TITLE>
+<H1>Bookmarks</H1>
+<DL><p>
+'@
+
+    #Loop through....
+    foreach($edgeProfile in $arrayCurrentProfiles){
+
+        $BookmarksHTML_Header | Out-File -FilePath $edgeProfile.TempFile -Force -Encoding utf8
+
+        # ---- Enumerate Bookmarks Folders ----
+        Function Get-BookmarkFolder {
+            [cmdletbinding()] 
+            Param( 
+                [Parameter(Position = 0, ValueFromPipeline = $True)]
+                $Node 
+            )  
+            if ($node.name -like "Favorites Bar") {
+                $DateAdded = [Decimal] $node.date_added | ConvertTo-OGUnixTimeStamp
+                $DateModified = [Decimal] $node.date_modified | ConvertTo-OGUnixTimeStamp
+                "        <DT><H3 FOLDED ADD_DATE=`"$($DateAdded)`" LAST_MODIFIED=`"$($DateModified)`" PERSONAL_TOOLBAR_FOLDER=`"true`">$($node.name )</H3>" | Out-File -FilePath $edgeProfile.TempFile -Append -Force -Encoding utf8
+                "        <DL><p>" | Out-File -FilePath $edgeProfile.TempFile -Append -Force -Encoding utf8
+            }
+            foreach ($child in $node.children) {
+                $DateAdded = [Decimal] $child.date_added | ConvertTo-OGUnixTimeStamp    
+                $DateModified = [Decimal] $child.date_modified | ConvertTo-OGUnixTimeStamp
+                if ($child.type -eq 'folder') {
+                    "        <DT><H3 ADD_DATE=`"$($DateAdded)`" LAST_MODIFIED=`"$($DateModified)`">$($child.name)</H3>" | Out-File -FilePath $edgeProfile.TempFile -Append -Force -Encoding utf8
+                    "        <DL><p>" | Out-File -FilePath $edgeProfile.TempFile -Append -Force -Encoding utf8
+                    Get-BookmarkFolder $child # Recursive call in case of Folders / SubFolders
+                    "        </DL><p>" | Out-File -FilePath $edgeProfile.TempFile -Append -Force -Encoding utf8
+                }
+                else {
+                    # Type not Folder => URL
+                    "        <DT><A HREF=`"$($child.url)`" ADD_DATE=`"$($DateAdded)`">$($child.name)</A>" | Out-File -FilePath $edgeProfile.TempFile -Append -Encoding utf8
+                }
+            }
+            if ($node.name -like "Favorites Bar") {
+                "        </DL><p>" | Out-File -FilePath $edgeProfile.TempFile -Append -Force -Encoding utf8
+            }
+        }
+
+        # ---- Convert the JSON Contens (recursive) ----
+        $data = Get-content $edgeProfile.Bookmarks -Encoding UTF8 | Out-String | ConvertFrom-Json
+        $sections = $data.roots.PSObject.Properties | Select-Object -ExpandProperty name
+        ForEach ($entry in $sections) { 
+            $data.roots.$entry | Get-BookmarkFolder
+        }
+        # ---- HTML Footer ----
+        '</DL>' | Out-File -FilePath $edgeProfile.TempFile -Append -Force -Encoding utf8
+        $HTML_Data = Get-Content $edgeProfile.TempFile
+        if (!($Export)){
+            Write-OGLogEntry "Exporting Bookmarks as String."
+            Remove-Item -Path $edgeProfile.TempFile -Force -ErrorAction SilentlyContinue
+            return $HTML_Data
+        }
+        else{
+            try{
+                Write-OGLogEntry "Exporting Bookmarks file [Destination: $($edgeProfile.ExportFile)]"
+                Move-Item -Path $edgeProfile.TempFile -Destination $edgeProfile.ExportFile -Force
+                Write-OGLogEntry "Success exporting Bookmarks file [Destination: $($edgeProfile.ExportFile)]"
+            }
+            catch{
+                $eM = "Failed exporting Bookmarks file [Destination: $($edgeProfile.ExportFile)]. Error: $_"
+                Write-OGLogEntry $eM -logtype Error
+            }
+        }
+    }
+}
+
 ##################################################################################################################################
 # END Files/Folder Region
 ##################################################################################################################################
@@ -1845,20 +2157,20 @@ Wait for a scheduled task with 40s wait time and 1s looptime.
 #>
 function Wait-OGScheduledTask{
     param(
-        [Parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
         [string]$TaskName,
-        [Parameter(Mandatory = $false, Position = 1,ValueFromPipeline)]
+        [Parameter(Mandatory = $false, Position = 1, ValueFromPipeline)]
         [int]$Timeout = 300,
-        [Parameter(Mandatory = $false, Position = 2,ValueFromPipeline)]
+        [Parameter(Mandatory = $false, Position = 2, ValueFromPipeline)]
         [int]$loopTime = 5
     )
-    $Task = Get-ScheduledTask | Where-Object {$_.TaskName -eq "$($TaskName)"}
+    $Task = Get-ScheduledTask | Where-Object { $_.TaskName -eq "$($TaskName)" }
     if (!($Task)){
         Write-OGLogEntry "Task not found with name. [Task Name: $($TaskName)]" -logtype Warning
         break
     }
-    $timer =  [Diagnostics.Stopwatch]::StartNew()
-    while (((Get-ScheduledTask  "$($Task.TaskName)").State -ne  'Ready') -and  ($timer.Elapsed.TotalSeconds -lt $Timeout)) {    
+    $timer = [Diagnostics.Stopwatch]::StartNew()
+    while (((Get-ScheduledTask  "$($Task.TaskName)").State -ne 'Ready') -and ($timer.Elapsed.TotalSeconds -lt $Timeout)) {    
         Write-OGLogEntry "Waiting for scheduled task to complete [Task Name: $($Task.TaskName)] [Time Elapsed: $($timer.Elapsed.TotalSeconds)s] [Time Remaining: $($Timeout - $timer.Elapsed.TotalSeconds)s]"
         Start-Sleep -Seconds $loopTime
     }
@@ -2372,7 +2684,9 @@ $Export = @(
     "Stop-OGOneDrive",
     "Stop-OGO365Apps",
     "Invoke-OGExplorerRefresh",
-    "Get-OGAvailableDriveLetter"
+    "Get-OGAvailableDriveLetter",
+    "Set-OGFullControl",
+    "Export-OGEdgeBookmarksHTML"
 )
 
 foreach ($module in $Export){
