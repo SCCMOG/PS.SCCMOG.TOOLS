@@ -2065,25 +2065,30 @@ function Export-OGEdgeBookmarksHTML {
                     $wProfile = $null
                     $profilePath = $(($profile.Name).Replace('HKEY_USERS', 'HKU:'))
                     $wProfile = Get-OGRegistryKey -RegKey "$($profilePath)"
-                    If (Test-OGFilePath "$($wProfile.Path)\BookMarks") {
-                        $TempFilePath = $null
-                        $TempFilePath = Get-OGTempStorage -File
-                        $ExportFile = $null
-
-                        $ExportFile = "$($ExportRoot)\Edge-Bookmarks_$($wProfile.PSChildName)_bk_$($ExportedTime).html"
-                        $objProfile = [PSCustomObject]@{
-                            Name         = $wProfile.PSChildName
-                            ShortcutName = $wProfile.ShortcutName
-                            Path         = $wProfile.Path
-                            Bookmarks    = "$($wProfile.Path)\BookMarks"
-                            RegPath      = "$($profilePath)"
-                            TempFile     = "$($TempFilePath)"
-                            ExportFile   = "$($ExportFile)"
+                    if ($wProfile.Path){
+                        If (Test-OGFilePath "$($wProfile.Path)\BookMarks") {
+                            $TempFilePath = $null
+                            $TempFilePath = Get-OGTempStorage -File
+                            $ExportFile = $null
+    
+                            $ExportFile = "$($ExportRoot)\Edge-Bookmarks_$($wProfile.PSChildName)_bk_$($ExportedTime).html"
+                            $objProfile = [PSCustomObject]@{
+                                Name         = $wProfile.PSChildName
+                                ShortcutName = $wProfile.ShortcutName
+                                Path         = $wProfile.Path
+                                Bookmarks    = "$($wProfile.Path)\BookMarks"
+                                RegPath      = "$($profilePath)"
+                                TempFile     = "$($TempFilePath)"
+                                ExportFile   = "$($ExportFile)"
+                            }
+                            $arrayCurrentProfiles += $objProfile
                         }
-                        $arrayCurrentProfiles += $objProfile
+                        else{
+                            Write-OGLogEntry "No Bookmark file found at [Path: $($wProfile.Path)\Bookmarks]"
+                        }
                     }
                     else{
-                        Write-OGLogEntry "No Bookmark file found at [Path: $($wProfile.Path)\Bookmarks]"
+                        Write-OGLogEntry "No Profile path found for profile [Profile: $($wProfile.PSChildName)] [ShortcutName: $($wProfile.ShortcutName)]"
                     }
                 }
             }
