@@ -33,7 +33,7 @@ Sets full control to the Builtin Users Group to HKLM:\Software\SCCMOG recursive
     Version history:
     1.0.0 - 2022-02-09 Function created
 #>
-function Set-OGFullControl {
+function Set-OGFullControlUsers {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0)]
@@ -56,7 +56,6 @@ function Set-OGFullControl {
     $BuiltinUsersGroup = $BuiltinUsersSID.Translate([System.Security.Principal.NTAccount])
     Write-OGLogEntry "Translated built in Users group [Name: $BuiltinUsersGroup]"
     Write-OGLogEntry "Getting current permisions for [Path: $($Path)]"
-    $PAth = "C:\ProgramData\Epic"
     $ACL = Get-Acl "$($Path)"
     Write-OGLogEntry "Current permisions for [Path: $($Path)][Owner: $($ACL.Owner)]"
     $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("$($BuiltinUsersGroup.Value)",
@@ -2685,7 +2684,7 @@ $Export = @(
     "Stop-OGO365Apps",
     "Invoke-OGExplorerRefresh",
     "Get-OGAvailableDriveLetter",
-    "Set-OGFullControl",
+    "Set-OGFullControlUsers",
     "Export-OGEdgeBookmarksHTML"
 )
 
