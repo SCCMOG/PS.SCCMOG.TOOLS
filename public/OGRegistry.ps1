@@ -173,6 +173,7 @@ Function Test-OGRegistryKey {
         [string]$RegKey
     )
     Write-OGLogEntry "Checking for RegKey: '$RegKey'"
+    $Exists = $null
     $Exists = Get-Item -Path "$RegKey" -ErrorAction SilentlyContinue
     If ($Exists) {
         Write-OGLogEntry "Found RegKey: '$RegKey'"
@@ -313,11 +314,18 @@ Function Test-OGRegistryKeyItem {
     try {
         if (Test-OGRegistryKey -RegKey $RegKey) {
             Write-OGLogEntry "Checking for Property: '$($Name)' at '$($RegKey)'"
-            Get-OGRegistryKey -RegKey $RegKey | Select-Object -ExpandProperty $Name -ErrorAction Stop | Out-Null
-            Write-OGLogEntry "Found Registry Key Item: '$($Name)' at '$($RegKey)'"
-            return $true
+            $RegKeyData = Get-OGRegistryKey -RegKey $RegKey
+            if ($RegKeyData.$Name){
+                Write-OGLogEntry "Found Registry Key Item: '$($Name)' at '$($RegKey)'"
+                return $true
+            }
+            Else{
+                Write-OGLogEntry "Did not find Registry Key Item: '$($Name)' at '$($RegKey)'"
+                Return $false
+            }
         }
         else {
+            Write-OGLogEntry "Did not find Registry Key: '$($RegKey)'"
             Return $false
         }
     }
@@ -326,6 +334,7 @@ Function Test-OGRegistryKeyItem {
         return $false
     }
 } 
+
 
 <#
 .SYNOPSIS
