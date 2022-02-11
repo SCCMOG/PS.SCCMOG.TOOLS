@@ -760,8 +760,10 @@ function Get-OGOneDriveKFMState {
     )
     Write-OGLogEntry "Getting OneDrive KFM state for [User: $($LoggedOnUser.USERNAME)]"
     $OneDriveAcPath = "Software\Microsoft\OneDrive\Accounts"
+    $Shell_reg = "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
     if(!(Get-PSDrive | Where-Object {$_.Name -eq "HKU"})){New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null}
     $UserOneDriveAcPath = "HKU:\$($LoggedOnUser.SID)\$($OneDriveAcPath)"
+    $UserShellPath = "HKU:\$($LoggedOnUser.SID)\$($Shell_reg)"
     $OneDriveBusinessPaths = Get-ChildItem -Path "$($UserOneDriveAcPath)" | Where-Object { ($_.PSIsContainer)-and($_.Name -like "*Business*") } | Select-Object Name
     if ($OneDriveBusinessPaths){
         Write-OGLogEntry "Found OneDrive Business Key [User: $($LoggedOnUser.USERNAME)]"
@@ -779,6 +781,20 @@ function Get-OGOneDriveKFMState {
             Write-OGLogEntry "OneDrive KFMState property not found @ [Key: $(($path.Name).Replace('HKEY_USERS','HKU:'))]"
         }
         Write-OGLogEntry "OneDrive KFMState not set for [User: $($LoggedOnUser.USERNAME)][Mail:$($LoggedOnUser.Email)]"
+        Write-OGLogEntry "Checking User Shell Paths [Path: $($UserShellPath)]"
+        $UserShellPaths = Get-ItemProperty -Path "$($UserShellPath)" -ErrorAction SilentlyContinue
+        if ($UserShellPaths.Desktop -like "*OneDrive*"){
+            Write-OGLogEntry "User's desktop Shell Path is pointing to OneDrive [Path: $($UserShellPaths.Desktop)]"
+            Write-OGLogEntry "OneDrive KFMState considered enabled. Returning desktop path."
+            $OneDriveDesktopPath = [PSCustomObject]@{
+                Desktop = "$($UserShellPaths.Desktop)"
+            }
+            return $OneDriveDesktopPath
+        }
+        else{
+            Write-OGLogEntry "User's desktop Shell Path does not point to OneDrive [Path: $($UserShellPaths.Desktop)]"
+            return $false
+        }
     }
     else{
         Write-OGLogEntry "OneDrive path not found [User: $($LoggedOnUser.USERNAME)][Mail:$($LoggedOnUser.Email)][Path: $($UserOneDriveAcPath)"
