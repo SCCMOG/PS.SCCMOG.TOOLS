@@ -235,6 +235,7 @@ function Get-OGLoggedOnUserCombined{
             {
                 $MSO365UserIdentityRoot = "Registry::hku\$($ActiveUser.SID)\SOFTWARE\Microsoft\Office\16.0\Common\Identity\Identities"
                 $MSIdentityCacheCurrentUser = "Registry::hklm\SOFTWARE\Microsoft\IdentityStore\Cache\$($ActiveUser.SID)\IdentityCache\$($ActiveUser.SID)"
+                $AuthLogonUI = "Registry::hklm\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\LogonUI"
                 if(Test-Path $MSO365UserIdentityRoot){
                     $MSO365UserIdentityRoot = Get-ChildItem "$MSO365UserIdentityRoot" | Where-Object {$_.Name -like "*_ADAL"}
                     if ($MSO365UserIdentityRoot){
@@ -254,6 +255,15 @@ function Get-OGLoggedOnUserCombined{
                         $AADObjID = "NA"
                     }
                 }
+                if (Test-Path $AuthLogonUI){
+                    $AuthLogonUIData = Get-ItemProperty "$AuthLogonUI" 
+                    if ($AuthLogonUIData.LastLoggedOnDisplayName){
+                        $UserDisplayName = "$($AuthLogonUIData.LastLoggedOnDisplayName)"
+                    }
+                    else{
+                        $UserDisplayName = "$($SID_RegVirtualEnv.USERNAME)"
+                    }
+                }
                 $LoggedInUser  = New-Object psobject
                 $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERNAME -Value            $SID_RegVirtualEnv.USERNAME
                 $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERPROFILE -Value         $SID_RegVirtualEnv.USERPROFILE
@@ -268,6 +278,7 @@ function Get-OGLoggedOnUserCombined{
                 $LoggedInUser | Add-Member -MemberType NoteProperty -Name Domain_SamAccount -Value   "$($SID_RegVirtualEnv.USERDOMAIN)\$($SID_RegVirtualEnv.USERNAME)"
                 $LoggedInUser | Add-Member -MemberType NoteProperty -Name Email -Value               $AADUName
                 $LoggedInUser | Add-Member -MemberType NoteProperty -Name AADUserObjID -Value        $AADObjID
+                $LoggedInUser | Add-Member -MemberType NoteProperty -Name DisplayName -Value         $UserDisplayName
                 $CurrentLoggedOnUser = $LoggedInUser
             }
     }
