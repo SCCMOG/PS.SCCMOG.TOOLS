@@ -513,14 +513,29 @@ function Stop-OGOneDrive {
     $p = $null
     $p = Get-Process | Where-object { $_.Name -like "OneDrive" }
     if ($p) {
-        Write-OGLogEntry "Found OneDrive process. Closing gracefully [CMD: $($p.path) /shutdown]"
-        & $p.path /shutdown
-        Write-OGLogEntry "OneDrive process gracefully closed [CMD: $($p.path) /shutdown]"
+        if ($p.Path -like "*\users\*"){
+            Write-OGLogEntry "Found OneDrive process. Killing it. [Path: $($p.path)]"
+            Stop-Process -InputObject $p -Force
+            Write-OGLogEntry "Killed it. [Path: $($p.path)]"
+        }
+        elseif (($p.Path -like "$($env:ProgramFiles)*")-or($p.Path -like "$(${env:ProgramFiles(x86)})*")) {
+            Write-OGLogEntry "Found OneDrive process. Closing gracefully [CMD: $($p.path) /shutdown]"
+            & $p.path /shutdown
+            Write-OGLogEntry "OneDrive process gracefully closed [CMD: $($p.path) /shutdown]"
+        }
+        else{
+            Write-OGLogEntry "Found OneDrive process. Killing it. [Path: $($p.path)]"
+            Stop-Process -InputObject $p -Force
+            Write-OGLogEntry "Killed it. [Path: $($p.path)]"
+        }
+        Start-Sleep -Seconds 1
+        Stop-OGOneDrive
     }
     else{
         Write-OGLogEntry "No OneDrive process found to close."
     }
 }
+
 
 <#
 .SYNOPSIS
@@ -2055,9 +2070,12 @@ function Export-OGEdgeBookmarksHTML {
 
     if ($Bulk){
         $regProfilesPath = "HKU:\$($USER_SID)\Software\Microsoft\Edge\Profiles"
+        $User_Shell_reg = "HKU:\$($USER_SID)\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"
         if (!(Get-PSDrive | Where-Object { $_.Name -eq "HKU" })) { New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null }
         if (Test-OGRegistryKey -RegKey $regProfilesPath) {
             $regProfiles = Get-ChildItem -Path "$($regProfilesPath)" | Where-Object { ($_.PSIsContainer) }
+            $UserLocalAppData = (Get-ItemProperty -Path $User_Shell_reg).'Local AppData'
+            $EdgeTempProfilePath = "$($UserLocalAppData)\Microsoft\Edge\User Data"
             if (($regProfiles | Measure-Object).Count -gt 0){
                 foreach ($profile in $regProfiles) {
                     $profilePath = $null
@@ -2066,29 +2084,42 @@ function Export-OGEdgeBookmarksHTML {
                     $profilePath = $(($profile.Name).Replace('HKEY_USERS', 'HKU:'))
                     $wProfile = Get-OGRegistryKey -RegKey "$($profilePath)"
                     if ($wProfile.Path){
-                        If (Test-OGFilePath "$($wProfile.Path)\BookMarks") {
-                            $TempFilePath = $null
-                            $TempFilePath = Get-OGTempStorage -File
-                            $ExportFile = $null
-    
-                            $ExportFile = "$($ExportRoot)\Edge-Bookmarks_$($wProfile.PSChildName)_bk_$($ExportedTime).html"
-                            $objProfile = [PSCustomObject]@{
-                                Name         = $wProfile.PSChildName
-                                ShortcutName = $wProfile.ShortcutName
-                                Path         = $wProfile.Path
-                                Bookmarks    = "$($wProfile.Path)\BookMarks"
-                                RegPath      = "$($profilePath)"
-                                TempFile     = "$($TempFilePath)"
-                                ExportFile   = "$($ExportFile)"
-                            }
-                            $arrayCurrentProfiles += $objProfile
+                        $bookMarksFile = "$($wProfile.Path)\BookMarks"
+                        if (Test-OGFilePath "$($bookMarksFile)"){
+                            $bookmarksFound = $true
                         }
                         else{
-                            Write-OGLogEntry "No Bookmark file found at [Path: $($wProfile.Path)\Bookmarks]"
+                            Write-OGLogEntry "No Profile path found for registry profile [Profile: $($wProfile.PSChildName)] [ShortcutName: $($wProfile.ShortcutName)]"
+                            $bookmarksFound = $false
                         }
                     }
                     else{
-                        Write-OGLogEntry "No Profile path found for profile [Profile: $($wProfile.PSChildName)] [ShortcutName: $($wProfile.ShortcutName)]"
+                        Write-OGLogEntry "No Profile path found for profile in registry. [Profile: $($wProfile.PSChildName)] [ShortcutName: $($wProfile.ShortcutName)]"
+                        $bookMarksFile = "$($EdgeTempProfilePath)\$($wProfile.PSChildName)\BookMarks"
+                        if (Test-OGFilePath "$($bookMarksFile)"){
+                            $bookmarksFound = $true
+                        }
+                        else{
+                            Write-OGLogEntry "No Profile path found for profile [Profile: $($wProfile.PSChildName)] [ShortcutName: $($wProfile.ShortcutName)] [ShortcutName: $($wProfile.ShortcutName)]"
+                            $bookmarksFound = $false
+                        }
+                    }
+                    If ($bookmarksFound) {
+                        $TempFilePath = $null
+                        $TempFilePath = Get-OGTempStorage -File
+                        $ExportFile = $null
+    
+                        $ExportFile = "$($ExportRoot)\Edge-Bookmarks_$($wProfile.PSChildName)_bk_$($ExportedTime).html"
+                        $objProfile = [PSCustomObject]@{
+                            Name         = $wProfile.PSChildName
+                            ShortcutName = $wProfile.ShortcutName
+                            Path         = $wProfile.Path
+                            Bookmarks    = "$($bookMarksFile)"
+                            RegPath      = "$($profilePath)"
+                            TempFile     = "$($TempFilePath)"
+                            ExportFile   = "$($ExportFile)"
+                        }
+                        $arrayCurrentProfiles += $objProfile
                     }
                 }
             }
