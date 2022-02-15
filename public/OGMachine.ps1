@@ -2013,6 +2013,7 @@ Exports to HTML File in c:\Admin
 
     Version history:
     1.0.0 - 2022-02-09 Function created
+    1.1.0 - 2022-02-14 Added LocalAppdata Lookup for bulk
 #>
 function Export-OGEdgeBookmarksHTML {
     [cmdletbinding(DefaultParameterSetName = 'UserPath')]            
