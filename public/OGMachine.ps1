@@ -490,10 +490,10 @@ function Stop-OGO365Apps {
 
 <#
 .SYNOPSIS
-Gracefully stop OneDrive Client
+Stop OneDrive Client
 
 .DESCRIPTION
-Gracefully stop OneDrive Client
+Stop OneDrive Client
 
 .EXAMPLE
 Stop-OGOneDrive
@@ -511,25 +511,24 @@ Stop-OGOneDrive
 #>
 function Stop-OGOneDrive {
     $p = $null
+    Write-OGLogEntry "Checking for OneDrive process."
     $p = Get-Process | Where-object { $_.Name -like "OneDrive" }
     if ($p) {
-        if ($p.Path -like "*\users\*"){
+        Write-OGLogEntry "Found OneDrive process. Killing it. [Path: $($p.path)]"
+        Stop-Process -InputObject $p -Force
+        Write-OGLogEntry "Killed it. [Path: $($p.path)]"
+        Start-Sleep -Seconds 1
+        Write-OGLogEntry "Checking again for OneDrive process."
+        $p = $null
+        $p = Get-Process | Where-object { $_.Name -like "OneDrive" }
+        if ($p) {
             Write-OGLogEntry "Found OneDrive process. Killing it. [Path: $($p.path)]"
             Stop-Process -InputObject $p -Force
             Write-OGLogEntry "Killed it. [Path: $($p.path)]"
-        }
-        elseif (($p.Path -like "$($env:ProgramFiles)*")-or($p.Path -like "$(${env:ProgramFiles(x86)})*")) {
-            Write-OGLogEntry "Found OneDrive process. Closing gracefully [CMD: $($p.path) /shutdown]"
-            & $p.path /shutdown
-            Write-OGLogEntry "OneDrive process gracefully closed [CMD: $($p.path) /shutdown]"
         }
         else{
-            Write-OGLogEntry "Found OneDrive process. Killing it. [Path: $($p.path)]"
-            Stop-Process -InputObject $p -Force
-            Write-OGLogEntry "Killed it. [Path: $($p.path)]"
+            Write-OGLogEntry "OneDrive processes already closed."
         }
-        Start-Sleep -Seconds 1
-        Stop-OGOneDrive
     }
     else{
         Write-OGLogEntry "No OneDrive process found to close."
