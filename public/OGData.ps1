@@ -231,6 +231,9 @@ The string password you would like to encrypt
 .PARAMETER OutFile
 Path to spit out the encrypted file.
 
+.PARAMETER Force
+Replace out-file if found. 
+
 .EXAMPLE
 New-OGEncryptedStrFile -String "MyCrazyPassword" -OutFile "PathAndFileName\toStorePass\Encrypted"
 
@@ -253,11 +256,19 @@ function New-OGEncryptedStrFile {
         [string]$String,
         [Parameter(Mandatory = $true, Position = 1, ValueFromPipeline)]
         [ValidateNotNullOrEmpty()]
-        [string]$OutFile
+        [string]$OutFile,
+        [Parameter(Mandatory = $false, Position = 2, ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [switch]$Force
     )
     try {
         $SecurePassword = ConvertTo-SecureString $string -AsPlainText -Force
         $Encrypted = convertfrom-securestring $SecurePassword -key (1..16)
+        if ($Force){
+            if (Test-OGFilePath -Path $OutFile){
+                Remove-Item -Path $OutFile -Force
+            }
+        }
         $Encrypted | set-content $OutFile -Force
     }
     catch {
@@ -265,6 +276,7 @@ function New-OGEncryptedStrFile {
     }
 
 }
+
 
 
 <#
