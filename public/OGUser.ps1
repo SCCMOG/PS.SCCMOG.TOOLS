@@ -218,7 +218,7 @@ function Get-OGLoggedOnUserCombined{
     Write-OGLogEntry -Logtext "Getting currently logged from WMI on user for machine: $($ENV:COMPUTERNAME)"
     $MachineInfo = Get-WMIObject -ClassName Win32_ComputerSystem
     $UserProfiles = Get-WmiObject -Class Win32_UserProfile | Where-Object {($_.SID -notmatch "^S-1-5-\d[18|19|20]$")}
-    $UserProfiles.Count
+    #$UserProfiles.Count
     if ($MachineInfo.UserName){
         $ActiveUserCSWMI = ($MachineInfo.UserName).Split('\')[1]
     }    
