@@ -218,7 +218,7 @@ Function New-OGRegistryKey {
     )
     Write-OGLogEntry "Creating RegKey: '$RegKey'"
     try {
-        New-Item "$RegKey" -ItemType Directory -Force | Out-Null
+        New-Item -Path "$RegKey" -ItemType Directory -Force | Out-Null
         $WasCreated = Test-OGRegistryKey -RegKey $RegKey
         Return $WasCreated
     }
