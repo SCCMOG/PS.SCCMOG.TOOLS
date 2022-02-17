@@ -43,13 +43,13 @@ function Get-APMPerms {
     foreach ($al in $ACL.Access){
         if ($al.IdentityReference -contains "$($BuiltinUsersGroup)"){
             if($al.FileSystemRights -contains "FullControl"){
-                Write-OGLogEntry "Full control found: [Path: $($Path)] [IdentityReference: $($BuiltinUsersGroup)] [FileSystemRights: $($al.FileSystemRights)] [InheritanceFlags: $($al.InheritanceFlags)]"
+                Write-OGLogEntry "Read and Execute found: [Path: $($Path)] [IdentityReference: $($BuiltinUsersGroup)] [FileSystemRights: $($al.FileSystemRights)] [InheritanceFlags: $($al.InheritanceFlags)]"
                 $PermFound = $true
                 return $PermFound
             }
         }
     }
-    Write-OGLogEntry "Full control NOT found: [Path: $($Path)] [IdentityReference: $($BuiltinUsersGroup)]" -logtype Warning
+    Write-OGLogEntry "Read and Execute NOT found: [Path: $($Path)] [IdentityReference: $($BuiltinUsersGroup)]" -logtype Warning
     return $PermFound
 }
 
@@ -66,15 +66,15 @@ Must be running as Adminstrator process or local system.
 Path to set perms
 
 .EXAMPLE
-Set-OGFullControl -Path C:\Admin
+Set-OGFullControlUsers -Path C:\Admin
 Sets full control to the Builtin Users Group to c:\Admin recursive
 
 .EXAMPLE
-Set-OGFullControl -Path HKLM:\Software\SCCMOG
+Set-OGFullControlUsers -Path HKLM:\Software\SCCMOG
 Sets full control to the Builtin Users Group to HKLM:\Software\SCCMOG recursive
 
 .NOTES
-    Name:       Set-OGFullControl       
+    Name:       Set-OGFullControlUsers       
 	Author:     Richie Schuster - SCCMOG.com
     GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
@@ -93,7 +93,7 @@ function Set-OGFullControlUsers {
         [ValidateNotNullOrEmpty()]
         [string]$Path,
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 1)]
-        [ValidateSet("Dir","Reg")]
+        [ValidateSet("Dir", "Reg")]
         [ValidateNotNullOrEmpty()]
         [string]$Type
     )
@@ -117,17 +117,17 @@ function Set-OGFullControlUsers {
     switch ($Type) {
         "Reg" {  
             $AccessRule = New-Object System.Security.AccessControl.RegistryAccessRule("$($BuiltinUsersGroup.Value)",
-            "FullControl",
-            'ContainerInherit,ObjectInherit',
-            'None',
-            "Allow")
+                "FullControl",
+                'ContainerInherit,ObjectInherit',
+                'None',
+                "Allow")
         }
         "Dir" {
             $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("$($BuiltinUsersGroup.Value)",
-            "FullControl",
-            'ContainerInherit,ObjectInherit',
-            'None',
-            "Allow")
+                "FullControl",
+                'ContainerInherit,ObjectInherit',
+                'None',
+                "Allow")
         }
     }
     try{
@@ -144,6 +144,169 @@ function Set-OGFullControlUsers {
     }
 }
 
+
+<#
+.SYNOPSIS
+Set Read and Execute to local user group to path.
+
+.DESCRIPTION
+Set Read and Execute to local user group to path. Also translates group name for alternate language os.
+Must be running as Adminstrator process or local system.
+
+.PARAMETER Path
+Path to set perms
+
+.EXAMPLE
+Set-OGReadUsers -Path C:\Admin
+Sets Read and Execute to the Builtin Users Group to c:\Admin recursive
+
+.EXAMPLE
+Set-OGReadUsers -Path HKLM:\Software\SCCMOG
+Sets Read and Execute to the Builtin Users Group to HKLM:\Software\SCCMOG recursive
+
+.NOTES
+    Name:       Set-OGReadUsers       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-02-09
+    Updated:    -
+    
+    Version history:
+    1.0.0 - 2022-02-09 Function created
+#>
+function Set-OGReadUsers {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 1)]
+        [ValidateSet("Dir", "Reg")]
+        [ValidateNotNullOrEmpty()]
+        [string]$Type
+    )
+    if (!(checkAdminRights)){
+        $eM = "User or process not running as Local Administrator"
+        Write-OGLogEntry $eM -logtype Error
+        throw "$($eM)"
+    }
+    if (!(Test-Path $Path -PathType Container)){
+        $eM = "No path found at [Path: $($Path)]"
+        Write-OGLogEntry $eM -logtype Error
+        throw "$($eM)"
+    }
+    $BuiltinUsersSID = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-545'
+    Write-OGLogEntry "Translating built in Users group [SID: $BuiltinUsersSID]"
+    $BuiltinUsersGroup = $BuiltinUsersSID.Translate([System.Security.Principal.NTAccount])
+    Write-OGLogEntry "Translated built in Users group [Name: $BuiltinUsersGroup]"
+    Write-OGLogEntry "Getting current permisions for [Path: $($Path)]" 
+    $ACL = Get-Acl "$($Path)"
+    Write-OGLogEntry "Current permisions for [Path: $($Path)][Owner: $($ACL.Owner)]"
+    switch ($Type) {
+        "Reg" {  
+            $AccessRule = New-Object System.Security.AccessControl.RegistryAccessRule("$($BuiltinUsersGroup.Value)",
+                "ReadKey",
+                'ContainerInherit,ObjectInherit',
+                'None',
+                "Allow")
+        }
+        "Dir" {
+            $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("$($BuiltinUsersGroup.Value)",
+                "ReadAndExecute",
+                'ContainerInherit,ObjectInherit',
+                'None',
+                "Allow")
+        }
+    }
+    try{
+        Write-OGLogEntry "Setting Read for [$($Type) Path: $($Path)] [Group: $($BuiltinUsersGroup)]" 
+        $ACL.SetAccessRule($AccessRule)
+        $ACL | Set-Acl $Path -ErrorAction stop
+        Write-OGLogEntry "Success setting Read recursive for [$($Type) Path: $($Path)] [Group: $($BuiltinUsersGroup)]"
+        return $true
+    }
+    catch{
+        $eM = "Failed setting Read recursive for [$($Type) Path: $($Path)] [Group: $($BuiltinUsersGroup)]. Error: $_" 
+        Write-OGLogEntry $em -logtype Error
+        throw $eM
+    }
+}
+
+
+<#
+.SYNOPSIS
+Set Read and Execute to local user group to file.
+
+.DESCRIPTION
+Set Read and Execute to local user group to file. Also translates group name for alternate language os.
+Must be running as Adminstrator process or local system.
+
+.PARAMETER Path
+Path to set perms
+
+.EXAMPLE
+Set-OGReadUsers -Path C:\Admin\myfile.txt
+Sets Read and Execute to the Builtin Users Group to c:\Admin\myfile.txt
+
+.NOTES
+    Name:       Set-OGReadUsers       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-02-09
+    Updated:    -
+    
+    Version history:
+    1.0.0 - 2022-02-09 Function created
+#>
+function Set-OGReadExecuteFileUsers {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 1)]
+        [ValidateSet("Dir", "Reg")]
+        [ValidateNotNullOrEmpty()]
+        [string]$Type
+    )
+    #[system.enum]::getnames([System.Security.AccessControl.FileSystemRights])
+    if (!(checkAdminRights)){
+        $eM = "User or process not running as Local Administrator"
+        Write-OGLogEntry $eM -logtype Error
+        throw "$($eM)"
+    }
+    if (!(Test-Path $Path -PathType leaf)){
+        $eM = "No file found at [Path: $($Path)]"
+        Write-OGLogEntry $eM -logtype Error
+        throw "$($eM)"
+    }
+    $BuiltinUsersSID = New-Object System.Security.Principal.SecurityIdentifier 'S-1-5-32-545'
+    Write-OGLogEntry "Translating built in Users group [SID: $BuiltinUsersSID]"
+    $BuiltinUsersGroup = $BuiltinUsersSID.Translate([System.Security.Principal.NTAccount])
+    Write-OGLogEntry "Translated built in Users group [Name: $BuiltinUsersGroup]"
+    Write-OGLogEntry "Getting current permisions for [Path: $($Path)]" 
+    $ACL = Get-Acl "$($Path)"
+    Write-OGLogEntry "Current permisions for File [Path: $($Path)][Owner: $($ACL.Owner)]"
+    $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule("$($BuiltinUsersGroup.Value)",
+        "ReadAndExecute",
+        "Allow")
+    try{
+        Write-OGLogEntry "Setting ReadandExecute for [File: $($Path)] [Group: $($BuiltinUsersGroup)]" 
+        $ACL.SetAccessRule($AccessRule)
+        $ACL | Set-Acl $Path -ErrorAction stop
+        Write-OGLogEntry "Success setting ReadandExecute recursive for [File: $($Path)] [Group: $($BuiltinUsersGroup)]"
+        return $true
+    }
+    catch{
+        $eM = "Failed setting ReadandExecute recursive for [File: $($Path)] [Group: $($BuiltinUsersGroup)]. Error: $_" 
+        Write-OGLogEntry $em -logtype Error
+        throw $eM
+    }
+}
 
 #endregion permissions
 ##################################################################################################################################
@@ -1875,6 +2038,7 @@ Function Test-OGContainerPath {
     }
 }
 
+
 <#
 .SYNOPSIS
 Check for file
@@ -2136,8 +2300,8 @@ function Export-OGEdgeBookmarksHTML {
         }
     }
 
-        # ---- HTML Header ----
-        $BookmarksHTML_Header = @'
+    # ---- HTML Header ----
+    $BookmarksHTML_Header = @'
 <!DOCTYPE NETSCAPE-Bookmark-file-1>
 <!-- This is an automatically generated file.
      It will be read and overwritten.
@@ -2221,6 +2385,63 @@ function Export-OGEdgeBookmarksHTML {
 ##################################################################################################################################
 #  Scheduled Task Region
 ##################################################################################################################################
+
+<#
+.SYNOPSIS
+Sets an Administrator/System Task to ReadandExecute for Authenticated Users 
+
+.DESCRIPTION
+Sets an Administrator/System Task to ReadandExecute for Authenticated Users 
+
+.PARAMETER TaskName
+Name of Task
+
+.EXAMPLE
+Set-OGTaskREPermissions -TaskName "MySystemTask"
+
+.NOTES
+    Name:       Export-OGEdgeBookmarksHTML
+    Original:   https://github.com/gunnarhaslinger/Microsoft-Edge-based-on-Chromium-Scripts
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-02-17
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2022-02-17 Function created
+#>
+function Set-OGTaskREPermissions {
+    param(
+        [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
+        [string]$TaskName
+    )
+    $Task = Get-ScheduledTask | Where-Object {$_.TaskName -like "$($TaskName)"}
+    if (!($Task)){
+        $eM = "Failed to find task [Name: $($TaskName)]"
+        Write-OGLogEntry $eM -logType Error
+        throw $eM
+        break
+    }
+    Write-OGLogEntry "Found Task [Name: $($TaskName)] attempting to set permissions ALLOW GRGE AU"
+    try{
+        $scheduler = New-Object -ComObject "Schedule.Service"
+        $scheduler.Connect()
+        $task = $scheduler.GetFolder("$(($Task.TaskPath).Substring(0,($Task.TaskPath).Length-1))").GetTask("$($Task.TaskName)")
+        $sec = $task.GetSecurityDescriptor(0xF)
+        $sec = $sec + '(A;;GRGX;;;AU)'
+        $task.SetSecurityDescriptor($sec, 0)
+        Write-OGLogEntry "Success setting permissions ALLOW GRGE AU for task [Name: $($TaskName)]"
+    }
+    catch{
+        $eM = "Failed setting permissions ALLOW GRGE AU for task [Name: $($TaskName)]. Error: $_"
+        Write-OGLogEntry $eM -logType Error
+        throw $eM
+        break
+    }
+}
+
 
 <#
 .SYNOPSIS
@@ -2788,7 +3009,10 @@ $Export = @(
     "Invoke-OGExplorerRefresh",
     "Get-OGAvailableDriveLetter",
     "Set-OGFullControlUsers",
-    "Export-OGEdgeBookmarksHTML"
+    "Export-OGEdgeBookmarksHTML",
+    "Set-OGReadExecuteFileUsers",
+    "Set-OGTaskREPermissions",
+    "Set-OGReadUsers"
 )
 
 foreach ($module in $Export){
