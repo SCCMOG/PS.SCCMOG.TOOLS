@@ -205,10 +205,12 @@ function Get-OGLoggedOnUser{
     Website:     https://www.sccmog.com
     Contact:     @RichieJSY
     Created:     2021-11-25
-    Updated:     -
+    Updated:     2022-02-17
     
     Version history:
     1.0.0 - 2021-11-25 Function created
+    2.0.0 -  2022-02-17 Modified WMI profiles search for Volatile ENV 
+
 #>  
 function Get-OGLoggedOnUserCombined{
     [cmdletbinding()]
@@ -216,6 +218,7 @@ function Get-OGLoggedOnUserCombined{
     Write-OGLogEntry -Logtext "Getting currently logged from WMI on user for machine: $($ENV:COMPUTERNAME)"
     $MachineInfo = Get-WMIObject -ClassName Win32_ComputerSystem
     $UserProfiles = Get-WmiObject -Class Win32_UserProfile | Where-Object {($_.SID -notmatch "^S-1-5-\d[18|19|20]$")}
+    $UserProfiles.Count
     if ($MachineInfo.UserName){
         $ActiveUserCSWMI = ($MachineInfo.UserName).Split('\')[1]
     }    
@@ -225,7 +228,14 @@ function Get-OGLoggedOnUserCombined{
         $ActiveUser = $CurrentActiveUser
     }
     else{
-        $ActiveUserUPWMI = $UserProfiles | Sort-Object -Property LastUseTime -Descending | Select-Object -First 1
+        #$ActiveUserUPWMI = $UserProfiles | Sort-Object -Property LastUseTime -Descending | Select-Object -First 1
+        $ActiveUserUPWMI = @()
+        foreach ($profile in $UserProfiles){
+            if ((Test-Path -Path "Registry::hku\$($profile.SID)\Volatile Environment" -PathType Container)-and($profile.Loaded)){
+                $ActiveUserUPWMI += $profile
+                break
+            }
+        }
         $ActiveUser = $ActiveUserUPWMI
         Write-OGLogEntry -Logtext "Found active user using Win32_UserProfile Class."
     }
