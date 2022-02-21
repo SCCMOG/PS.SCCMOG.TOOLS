@@ -16,15 +16,20 @@ Write-OGLogEntry -logtype Header
 # $global:PS_NEWOGLogEntry_DEFAULT_LOGPATH = ""
 
 #######################################################################################
-#Main Region
+#Region Main
 #######################################################################################
 
-Write-OGLogEntry -logText "Testing"
+#Will log to script name.
+Set-OGEventLogLogging -Enabled -Default -Verbose
+
+Write-OGLogEntry -logText "Testing" -Verbose
 Write-OGLogEntry -logText "Testing" -Logtype Warning
 Write-OGLogEntry -logText "Testing" -Logtype Error
 
+#Set-OGEventLogLogging -Enabled -EventLog "Test" -EventLogSource "Mysource" -Verbose
+
 #Get-PSCallStack
 #######################################################################################
-#Finish Region
+#endRegion Main
 #######################################################################################
 Write-OGLogEntry -logtype Footer

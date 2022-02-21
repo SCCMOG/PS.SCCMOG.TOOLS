@@ -31,7 +31,7 @@ function IntializePSSCCMOGModule () {
     $global:PS_NEWOGLogEntry_DEFAULT_LOGPATH = "$($defaultLogDetails.DefaultLogFilePath)"
 
     #Script
-    $script:PS_NEWOGLogEntry_DEFAULT_EventLog = "Clarivate Deployment"
+    $script:PS_NEWOGLogEntry_DEFAULT_EventLog = "SCCMOG"
     $script:PS_NEWOGLogEntry_DEFAULT_EventLogSource = "$($defaultLogDetails.ScriptName)"
     $script:PS_NEWOGLogEntry_DEFAULT_LogtoEventLog = $false
     $script:UseMutex = $false

@@ -305,13 +305,12 @@ function getEventLogSource{
 
     $selectEventLog = getEventLog -LogName $eventLog
     if ($selectEventLog){
-        $Sources = (Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\$($eventLog)").pschildname | Select-Object -Skip 1
+        $Sources = (Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\$($eventLog)").pschildname #| Select-Object -Skip 1
         return $sources
     }else{
         Write-Error "No Event log found with name: $($EventLog)."
     }
 }
-
 
 function newEventLogSource {
     param(
