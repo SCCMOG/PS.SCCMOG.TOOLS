@@ -267,8 +267,8 @@ function newEventLog{
     )
     $EventSources = @()
     #Setup event sources
-    $ConfigEventSource = "Configuration"
-    $EventSources += $ConfigEventSource
+    #$ConfigEventSource = "Configuration"
+    #$EventSources += $ConfigEventSource
     $SourceName | ForEach-Object {$EventSources += $_}
 
     #Get all current event logs and check for match
@@ -288,7 +288,7 @@ function newEventLog{
             Write-Error "Failed to create the Event Log: $($LogName). $_"
         }
         try{
-            writeEventLog -eventLog "$($LogName)" -EventSource "$($ConfigEventSource)" -messageType "Info" -message "Event Log: '$($LogName)' with sources: '$($EventSources -join " | ")' has been created." 
+            writeEventLog -eventLog "$($LogName)" -EventSource "$($script:PS_NEWOGLogEntry_DEFAULT_EventLogSource)" -messageType "Info" -message "Event Log: '$($LogName)' with sources: '$($EventSources -join " | ")' has been created." 
         }
         catch{
             Write-Error "Failed to write to Event Source:'$($ConfigEventSource)' for event log:'$($LogName)'. $_"
@@ -308,7 +308,7 @@ function getEventLogSource{
         $Sources = (Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\$($eventLog)").pschildname | Select-Object -Skip 1
         return $sources
     }else{
-        Write-Error "No Event log foun with name: $($EventLog)."
+        Write-Error "No Event log found with name: $($EventLog)."
     }
 }
 
