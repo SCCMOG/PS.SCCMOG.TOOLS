@@ -2401,7 +2401,7 @@ Set-OGTaskREPermissions -TaskName "MySystemTask"
 
 .NOTES
     Name:       Export-OGEdgeBookmarksHTML
-    Original:   https://github.com/gunnarhaslinger/Microsoft-Edge-based-on-Chromium-Scripts
+    Original:   https://michlstechblog.info/blog/windows-run-task-scheduler-task-as-limited-user/
     Author:     Richie Schuster - SCCMOG.com
     GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com

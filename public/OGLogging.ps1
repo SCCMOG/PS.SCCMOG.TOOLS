@@ -1,51 +1,51 @@
 <#
-    .SYNOPSIS
-        Logging function
-    .DESCRIPTION
-        This logging function is designed to work automatically after the module is imported.
-        It will automatically initialize the logs of the current script to %ProgramData%\Logs\ScriptName.log
+.SYNOPSIS
+    Logging function
+.DESCRIPTION
+    This logging function is designed to work automatically after the module is imported.
+    It will automatically initialize the logs of the current script to %ProgramData%\Logs\ScriptName.log
 
-    .EXAMPLE
-        PS C:\> Write-OGLogEntry -logText "Look at this awesome information log!" -LogType Info
-        Logging an information line. (LogType Default is Info so not required.)
-    .EXAMPLE
-        PS C:\> Write-OGLogEntry -logText "Look at this awesome Warning log!" -LogType Warning
-        Logging a Warning line.
-    .EXAMPLE
-        PS C:\> Write-OGLogEntry -logText "Look at this awesome Error log!" -LogType Error
-        Logging an Error line.
-    .EXAMPLE
-        PS C:\> Write-OGLogEntry -LogType Header
-        Log a log header to use at the begining of scripts.
-    .EXAMPLE
-        PS C:\> Write-OGLogEntry -LogType Footer
-        Log a log footer to use at the end of scripts.
+.EXAMPLE
+    PS C:\> Write-OGLogEntry -logText "Look at this awesome information log!" -LogType Info
+    Logging an information line. (LogType Default is Info so not required.)
+.EXAMPLE
+    PS C:\> Write-OGLogEntry -logText "Look at this awesome Warning log!" -LogType Warning
+    Logging a Warning line.
+.EXAMPLE
+    PS C:\> Write-OGLogEntry -logText "Look at this awesome Error log!" -LogType Error
+    Logging an Error line.
+.EXAMPLE
+    PS C:\> Write-OGLogEntry -LogType Header
+    Log a log header to use at the begining of scripts.
+.EXAMPLE
+    PS C:\> Write-OGLogEntry -LogType Footer
+    Log a log footer to use at the end of scripts.
 
-    .PARAMETER logText
-        Description:    The Text to log.
+.PARAMETER logText
+    Description:    The Text to log.
 
-    .PARAMETER logtype
-        Description:    Type to log
-        Set:            "Info","Warning","Error","Header","Footer"
+.PARAMETER logtype
+    Description:    Type to log
+    Set:            "Info","Warning","Error","Header","Footer"
 
-    .INPUTS
-        String
-        Switch
-    .OUTPUTS
-        String
-        Event Log
-        CLI
-    .NOTES
-           Name:       Write-OGLogEntry
-           Author:     Richie Schuster - SCCMOG.com
-           Website:    https://www.sccmog.com
-           Contact:    @RichieJSY
-           Created:    2021-08-18
-           Updated:    -
-    
-           Version history:
-               1.0.0 - 2021-08-18 Function created
-    #>
+.INPUTS
+    String
+    Switch
+.OUTPUTS
+    String
+    Event Log
+    CLI
+.NOTES
+    Name:       Write-OGLogEntry
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2021-08-18
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2021-08-18 Function created
+#>
 function Write-OGLogEntry {
     [cmdletbinding()]
     param(
@@ -91,6 +91,59 @@ function Write-OGLogEntry {
         writeLogEntry -objLogEntry $objLogEntry
     }
 }
+
+
+<#
+.SYNOPSIS
+Creates an Event Log source for an event log if not found.
+
+.DESCRIPTION
+Creates an Event Log source for an event log if not found.
+
+.PARAMETER EventLog
+Eventlog to create the source for.
+
+.PARAMETER EventSource
+Name of the new event source.
+
+.EXAMPLE
+New-OGEventLogSource -EventLog "Mycustom eventlog" -EventSource "My Eventlog Source"
+Creates a new (if not alredy found) event source called "My Eventlog Source" in the event log "Mycustom eventlog"
+
+.NOTES
+    Name:       New-OGEventLogSource
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-02-21
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-02-21 Function created
+#>
+function New-OGEventLogSource {
+    param(
+        [Parameter(Mandatory = $true)]
+        $EventLog,
+        [Parameter(Mandatory = $true)]
+        $EventSource
+    )
+    Write-OGLogEntry "Getting Eventlog [Name: $($EventLog)]"
+    $sources = getEventLogSource -eventLog $EventLog
+    if ($sources){
+        if ($EventSource -in $sources){
+            Write-OGLogEntry "Event source already present in event log [Source: $($EventSource)] [EventLog: $($EventLog)]."
+        }
+        Else{
+            [System.Diagnostics.EventLog]::CreateEventSource("$EventSource", "$EventLog")
+            Write-OGLogEntry "Success creating Event source [Source: $($EventSource)] [EventLog: $($EventLog)]"
+        }
+    }
+    Else{
+        Write-OGLogEntry "No Event log with that name found [EventLog: $($EventLog)]" -logtype Warning
+    }
+}
+
 
 <#
 .SYNOPSIS
@@ -348,7 +401,8 @@ $Export = @(
     "Set-OGEventLogLogging",
     "Set-OGLogEntryPath",
     "Write-OGLogEntry",
-    "Set-OGLogEntryRootPath"
+    "Set-OGLogEntryRootPath",
+    "New-OGEventLogSource"
 )
 
 FOREACH ($module in $Export){
