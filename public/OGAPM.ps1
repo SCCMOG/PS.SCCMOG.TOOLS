@@ -14,10 +14,10 @@ APM Module
 Path to APM RegKey
 
 .EXAMPLE
-Clear-OGAPMError -APM_Module "Inventory" -APM_RegKey_Path HKLM:\Software\SCCMOG\APM
+Clear-OGAPMIssue -APM_Module "Inventory" -APM_RegKey_Path HKLM:\Software\SCCMOG\APM
 
 .NOTES
-    Name:       Clear-OGAPMError 
+    Name:       Clear-OGAPMIssue 
     Author:     Richie Schuster - SCCMOG.com
     GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
@@ -28,7 +28,7 @@ Clear-OGAPMError -APM_Module "Inventory" -APM_RegKey_Path HKLM:\Software\SCCMOG\
     Version history:
     1.0.0 - 2022-01-19 Function created
 #>
-function Clear-OGAPMError {
+function Clear-OGAPMIssue {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -36,7 +36,7 @@ function Clear-OGAPMError {
         [Parameter(Mandatory = $false)]
         [string]$APM_RegKey_Path = "HKLM:\Software\SCCMOG\APM"
     )
-    Write-OGLogEntry "Clearing APM errors for module: $($APM_Module)"
+    Write-OGLogEntry "Clearing APM issues for module: $($APM_Module)" -logtype Warning
     if ($APM_Reg = Get-OGRegistryKey -RegKey $APM_RegKey_Path ){
         if ($APM_Reg.APM_Error_Module -eq $APM_Module){
             New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error" -Value "$false"
@@ -46,7 +46,7 @@ function Clear-OGAPMError {
     }
     Remove-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_Error"
     Remove-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_ErrorTimeStamp"
-    Write-OGLogEntry "Cleared APM errors for module: $($APM_Module)" -logtype Warning
+    Write-OGLogEntry "Cleared APM issues for module: $($APM_Module)" -logtype Warning
 }
 
 <#
@@ -66,13 +66,13 @@ APM Module
 throw the current execution also.
 
 .EXAMPLE
-New-OGAPMError -ErrorMsg "There has been an error" -APM_Module "Inventory"
+New-OGAPMIssue -ErrorMsg "There has been an error" -APM_Module "Inventory"
 
 .EXAMPLE
-New-OGAPMError -ErrorMsg "There has been an error" -APM_Module "Inventory" -throw
+New-OGAPMIssue -ErrorMsg "There has been an error" -APM_Module "Inventory" -throw
 
 .NOTES
-    Name:       New-OGAPMError 
+    Name:       New-OGAPMIssue 
     Author:     Richie Schuster - SCCMOG.com
     GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
@@ -83,7 +83,7 @@ New-OGAPMError -ErrorMsg "There has been an error" -APM_Module "Inventory" -thro
     Version history:
     1.0.0 - 2022-01-19 Function created
 #>
-function New-OGAPMError {
+function New-OGAPMIssue {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
@@ -110,8 +110,8 @@ function New-OGAPMError {
 
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
-    "Clear-OGAPMError",
-    "New-OGAPMError"
+    "Clear-OGAPMIssue",
+    "New-OGAPMIssue"
 )
 
 foreach ($module in $Export){
