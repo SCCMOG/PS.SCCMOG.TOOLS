@@ -800,6 +800,62 @@ function Get-OGOneDriveKFMState {
     }
 }
 
+
+<#
+.SYNOPSIS
+Creates a new local Admin account.
+
+.DESCRIPTION
+Creates a new local Admin account.
+
+.PARAMETER Account_Name
+Name of new local admin account
+
+.PARAMETER PT_Pass
+Plain text password.
+
+.PARAMETER Description
+Description for account
+
+.EXAMPLE
+New-OGLocalAdmin -Account_Name $LocalAdmin -PT_Pass $Password -Description "APM - Get out of Jail Free Account"
+
+.EXAMPLE
+New-OGLocalAdmin -Account_Name $LocalAdmin -PT_Pass $Password
+
+.NOTES
+    Name:       New-OGLocalAdmin
+    Author:     Richie Schuster - SCCMOG.com
+    Original:   https://www.scriptinglibrary.com/languages/powershell/create-a-local-admin-account-with-powershell/
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-03-07
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2022-03-07 Function created
+#>
+function New-OGLocalAdmin {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true)]
+        [string]$Account_Name,
+        [Parameter(Mandatory = $true)]
+        [string]$PT_Pass,
+        [Parameter(Mandatory = $false)]
+        [string]$Description = "Temp Local Admin"
+    )
+    try{
+        $sPass = ConvertTo-SecureString -String $PT_Pass -AsPlainText -Force
+        New-LocalUser "$Account_Name" -Password $sPass -FullName "$Account_Name" -Description $Description -AccountNeverExpires -PasswordNeverExpires
+        Add-LocalGroupMember -Group "Administrators" -Member "$Account_Name"
+    }
+    catch{
+        Write-OGLogEntry "Failed creating local admin. Error: $_"
+        return $false
+    }
+}
+
 ##################################################################################################################################
 # End Current User Region
 ##################################################################################################################################
@@ -810,7 +866,8 @@ $Export = @(
     "Invoke-OGStartProcessAsCurrentUser",
     "Get-OGLoggedOnUserWMI",
     "Get-OGLoggedOnUserCombined",
-    "Get-OGOneDriveKFMState"
+    "Get-OGOneDriveKFMState",
+    "New-OGLocalAdmin"
 )
 
 foreach ($module in $Export){
