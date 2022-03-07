@@ -215,31 +215,19 @@ function Get-OGLoggedOnUser{
 function Get-OGLoggedOnUserCombined{
     [cmdletbinding()]
     $CurrentLoggedOnUser = $null
-    Write-OGLogEntry -Logtext "Getting currently logged from WMI on user for machine: $($ENV:COMPUTERNAME)"
-    $MachineInfo = Get-WMIObject -ClassName Win32_ComputerSystem
+    Write-OGLogEntry -Logtext "Getting current profile list from from WMI for machine: $($ENV:COMPUTERNAME)"
     $UserProfiles = Get-WmiObject -Class Win32_UserProfile | Where-Object {($_.SID -notmatch "^S-1-5-\d[18|19|20]$")}
-    #$UserProfiles.Count
-    if ($MachineInfo.UserName){
-        $ActiveUserCSWMI = ($MachineInfo.UserName).Split('\')[1]
-    }    
-    if ($ActiveUserCSWMI){
-        Write-OGLogEntry -Logtext "Found active user using Win32_ComputerSystem Class."
-        $CurrentActiveUser = $UserProfiles | Where-Object {($_.LocalPath -like "*\$ActiveUserCSWMI")} 
-        $ActiveUser = $CurrentActiveUser
-    }
-    else{
-        #$ActiveUserUPWMI = $UserProfiles | Sort-Object -Property LastUseTime -Descending | Select-Object -First 1
-        $ActiveUserUPWMI = @()
-        foreach ($profile in $UserProfiles){
-            if ((Test-Path -Path "Registry::hku\$($profile.SID)\Volatile Environment" -PathType Container)-and($profile.Loaded)){
-                $ActiveUserUPWMI += $profile
-                break
-            }
+    Write-OGLogEntry -Logtext "Found $(($UserProfiles|Measure-Object).Count) user profile(s) in WMI for machine: $($ENV:COMPUTERNAME)"
+    Write-OGLogEntry -Logtext "Searching user registry profile(s) for Volatile Environment key."
+    $ActiveUser = $null
+    foreach ($profile in $UserProfiles){
+        if ((Test-Path -Path "Registry::hku\$($profile.SID)\Volatile Environment" -PathType Container)-and($profile.Loaded)){
+            Write-OGLogEntry -Logtext "Found active user loaded."
+            $ActiveUser = $profile
+            break
         }
-        $ActiveUser = $ActiveUserUPWMI
-        Write-OGLogEntry -Logtext "Found active user using Win32_UserProfile Class."
     }
-    if ($ActiveUser.Loaded){
+    if (($ActiveUser|Measure-Object).Count -eq 1){
             $SID_RegVirtualEnv = Get-ItemProperty "Registry::hku\$($ActiveUser.SID)\Volatile Environment" -ErrorAction SilentlyContinue
             if($SID_RegVirtualEnv)
             {
@@ -293,7 +281,7 @@ function Get-OGLoggedOnUserCombined{
             }
     }
     Else{
-        Write-OGLogEntry -Logtext "ERROR No logged on user for machine: $($ENV:COMPUTERNAME)" -logType Error
+        Write-OGLogEntry -Logtext "ERROR No logged on active user for machine: $($ENV:COMPUTERNAME)" -logType Error
         return $CurrentLoggedOnUser
     }
     Write-OGLogEntry -Logtext "Current logged on user: $($CurrentLoggedOnUser.USERNAME)"
