@@ -415,6 +415,7 @@ ConvertFrom-OGHexa -HexString  $NewProfileHex
     Name:       ConvertFrom-OGHexa
     Author:     Richie Schuster - SCCMOG.com
     Original:   https://www.reddit.com/r/PowerShell/comments/48bxto/comment/d0j14hc/?utm_source=share&utm_medium=web2x&context=3
+                https://community.spiceworks.com/topic/1951587-move-ost-file-locaiton-for-existing-outlook-profiles
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2022-01-31
@@ -422,22 +423,24 @@ ConvertFrom-OGHexa -HexString  $NewProfileHex
 
     Version history:
         1.0.0 - 2022-01-31 Function created
+        2.0.0 - 2022-03-08 Convertion cmdlet changed due to output issue.
 #>
 function ConvertFrom-OGHexa {
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory = $True,Position = 0,ValueFromPipeline)]
+        [Parameter(Mandatory = $True, Position = 0, ValueFromPipeline)]
         [ValidateNotNullOrEmpty()]
         [array]$HexString
     )
-    Write-OGlogentry "Attempting to convert HEX to ASCII"
-    try{
-        $asciiString = [System.Text.Encoding]::Unicode.GetString(($HexString))
-        Write-OGlogentry "Success converting HEX to ASCII. Returning.."
-        return $asciiString
+    Write-OGLogEntry "Attempting to convert HEX to ASCII"
+    try {
+        #$string = [System.Text.Encoding]::Unicode.GetString(($HexString))
+        $string = ($hexstring | Where-Object { $_ -gt '0' } | ForEach-Object { [char][int]"$($_)" }) -join ''
+        Write-OGLogEntry "Success converting HEX to ASCII."
+        return $string
     }
-    catch{
-        Write-OGlogentry "FAiled converting HEX to ASCII. Error: $_"
+    catch {
+        Write-OGLogEntry "Failed converting HEX to ASCII. Error: $_"
         return $null
     }
 }
