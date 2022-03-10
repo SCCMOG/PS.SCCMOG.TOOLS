@@ -36,17 +36,22 @@ function Clear-OGAPMIssue {
         [Parameter(Mandatory = $false)]
         [string]$APM_RegKey_Path = "HKLM:\Software\SCCMOG\APM"
     )
-    Write-OGLogEntry "Clearing APM issues for module: $($APM_Module)" -logtype Warning
-    if ($APM_Reg = Get-OGRegistryKey -RegKey $APM_RegKey_Path ){
+    Write-OGLogEntry "Clearing APM issues for module: $($APM_Module)"
+    if ($APM_Reg = Get-OGRegistryKey -RegKey $APM_RegKey_Path){
         if ($APM_Reg.APM_Error_Module -eq $APM_Module){
-            New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error" -Value "$false"
-            New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error_Module" -Value "NONE"
-            New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error_TimeStamp" -Value "NONE"
+            Remove-ItemProperty -Path $APM_RegKey_Path -Name "APM_Error" -Force -ErrorAction SilentlyContinue | Out-Null
+            Remove-ItemProperty -Path $APM_RegKey_Path -Name "APM_Error_Module" -Force -ErrorAction SilentlyContinue | Out-Null
+            Remove-ItemProperty -Path $APM_RegKey_Path -Name "APM_Error_TimeStamp" -Force -ErrorAction SilentlyContinue | Out-Null
+            # New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error" -Value "$false"
+            # New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error_Module" -Value "NONE"
+            # New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error_TimeStamp" -Value "NONE"
         } 
     }
-    Remove-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_Error"
-    Remove-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_ErrorTimeStamp"
-    Write-OGLogEntry "Cleared APM issues for module: $($APM_Module)" -logtype Warning
+    Remove-ItemProperty -Path $APM_RegKey_Path -Name "$($APM_Module)_Error" -Force -ErrorAction SilentlyContinue | Out-Null
+    Remove-ItemProperty -Path $APM_RegKey_Path -Name "$($APM_Module)_ErrorTimeStamp" -Force -ErrorAction SilentlyContinue | Out-Null
+    # Remove-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_Error"
+    # Remove-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_ErrorTimeStamp"
+    Write-OGLogEntry "Cleared APM issues for module: $($APM_Module)"
 }
 
 <#
@@ -91,17 +96,19 @@ function New-OGAPMIssue {
         [Parameter(Mandatory = $true)]
         [string]$APM_Module,
         [Parameter(Mandatory = $false)]
+        [string]$RegKey = "HKLM:\SOFTWARE\SCCMOG\APM",
+        [Parameter(Mandatory = $false)]
         [switch]$throw
     )
     $msg = "$($ErrorMsg)"
     Write-OGLogEntry $msg -logtype Error
     $ErrorTimeStamp = Get-Date -Format 'yyyy.MM.dd HH:mm:ss'
-    New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error" -Value "$True"
-    New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error_Module" -Value "$($APM_Module)"
-    New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "APM_Error_TimeStamp" -Value "$($ErrorTimeStamp)"
-    New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_Error" -Value "$($msg)"
-    New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_ErrorTimeStamp" -Value "$($ErrorTimeStamp)"
-    New-OGRegistryKeyItem -RegKey $APM_RegKey_Path -Name "$($APM_Module)_Complete" -Value "$($false)"
+    New-OGRegistryKeyItem -RegKey $RegKey -Name "APM_Error" -Value "$True"
+    New-OGRegistryKeyItem -RegKey $RegKey -Name "APM_Error_Module" -Value "$($APM_Module)"
+    New-OGRegistryKeyItem -RegKey $RegKey -Name "APM_Error_TimeStamp" -Value "$($ErrorTimeStamp)"
+    New-OGRegistryKeyItem -RegKey $RegKey -Name "$($APM_Module)_Error" -Value "$($msg)"
+    New-OGRegistryKeyItem -RegKey $RegKey -Name "$($APM_Module)_ErrorTimeStamp" -Value "$($ErrorTimeStamp)"
+    New-OGRegistryKeyItem -RegKey $RegKey -Name "$($APM_Module)_Complete" -Value "$($false)"
     if ($throw){
         Write-OGLogEntry -logtype Footer
         throw $msg
