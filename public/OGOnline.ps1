@@ -115,8 +115,9 @@ function Get-OGHandleApp{
     $ZipFilePath = "$Output_Path\$ZipFile"
     $Uri = "https://download.sysinternals.com/files/$ZipFile"
     try {
-        Remove-Item -Path $Output_Path -Recurse -Force -ErrorAction SilentlyContinue
-        $null = New-Item -ItemType Directory -Path $Output_Path -Force -ErrorAction Stop
+        if (!(Test-Path "$($Output_Path)" -PathType Container)){
+            $null = New-Item -ItemType Directory -Path $Output_Path -Force -ErrorAction Stop
+        }
         Invoke-RestMethod -Method Get -Uri $Uri -OutFile $ZipFilePath -ErrorAction Stop
         Expand-Archive -Path $ZipFilePath -DestinationPath $Output_Path -Force -ErrorAction Stop
         Remove-Item -Path $ZipFilePath -ErrorAction SilentlyContinue
