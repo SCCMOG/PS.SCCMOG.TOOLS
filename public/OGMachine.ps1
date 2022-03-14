@@ -811,6 +811,214 @@ Function Start-OGCommand (){
     }
 }
 
+<#
+.SYNOPSIS
+Stop one or more processes with extra error handling and logging.
+
+.DESCRIPTION
+Stop one or more processes with extra error handling and logging.
+We first try stop the process nicely by calling Stop-Process().
+But if the process is still running after the timeout expires then we
+do a hard kill.
+
+.PARAMETER ProcessId
+Process id(s) to stop/kill.
+
+.PARAMETER TimeoutSec
+Timeout before killing process
+
+.EXAMPLE
+Invoke-OGKillProcess -ProcessId $Lockingprocs.pid
+
+.NOTES
+    Name:       Invoke-OGKillProcess
+    Original:   https://www.powershellgallery.com/packages/LockingProcessKiller/0.9.0/Content/LockingProcessKiller.psm1
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-03-14
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2022-03-14 Function Created
+#>
+function Invoke-OGKillProcess {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory = $true,ValueFromPipeline,Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [int[]] $ProcessId,
+        [parameter(Mandatory = $false,Position = 1)]
+        [int] $TimeoutSec = 2
+    )
+    [int[]] $ProcIdS = @()
+    if ($ProcessId) {
+        $ProcIdS += $ProcessId
+    }
+    if ($ProcIdS) {
+        [array]$CimProcS = $null
+        [array]$StoppedIdS = $null
+        foreach ($ProcId in $ProcIdS) {
+            $CimProc = Get-CimInstance -Class Win32_Process -Filter "ProcessId = '$ProcId'" -Verbose:$false
+            $CimProcS += $CimProc
+            if ($CimProc) {
+                Write-OGLogEntry "Stopping [process: $($CimProc.Name)($($CimProc.ProcessId)), ParentProcessId:'$($CimProc.ParentProcessId)', Path:'$($CimProc.Path)']"
+                Stop-Process -Id $CimProc.ProcessId -Force -ErrorAction Ignore
+                $StoppedIdS += $CimProc.ProcessId
+            }
+            else {
+                #Write-OGLogEntry "Process($ProcId) already stopped"
+            }
+        }
+
+        if ($StoppedIdS) {
+            if ($TimeoutSec) {
+                Write-OGLogEntry "Waiting for processes to stop [TimeoutSec: $TimeoutSec]"
+                Wait-Process -Id $StoppedIdS -Timeout $TimeoutSec -ErrorAction ignore
+            }
+
+            # Verify that none of the stopped processes exist anymore
+            [array] $NotStopped = $null
+            foreach ($ProcessId in $StoppedIdS) {
+                # Hard kill the proess if the gracefull stop failed
+                $Proc = Get-Process -Id $ProcessId -ErrorAction Ignore
+                if ($Proc -and !$Proc.HasExited) {
+                    $ProcInfo = "Process: $($Proc.Name)($ProcessId)"
+                    Write-OGLogEntry "Timeout reched killing process [Process: $ProcInfo]" -logtype Warning
+                    try {
+                        $Proc.Kill()
+                    }
+                    catch {
+                        Write-Warning "Kill Child-Process Exception: $($_.Exception.Message)"
+                    }
+                    Wait-Process -Id $ProcessId -Timeout 2 -ErrorAction ignore
+                    $CimProc = Get-CimInstance -Class Win32_Process -Filter "ProcessId = '$ProcessId'" -Verbose:$false
+                    if ($CimProc) {
+                        $NotStopped += $CimProc
+                    }
+                }
+            }
+            if ($NotStopped) {
+                $ProcInfoS = ($NotStopped | ForEach-Object { "$($_.Name)($($_.ProcessId))" }) -join ", "
+                $ErrMsg = "Timeout-Error stopping processes [Processes: $($ProcInfoS) ]"
+                if (@("SilentlyContinue", "Ignore", "Continue") -notcontains $ErrorActionPreference) {
+                    Throw $ErrMsg
+                }
+                Write-OGLogEntry $ErrMsg -logtype Warning
+            }
+            else {
+                $ProcInfoS = ($CimProcS | ForEach-Object { "$($_.Name)($($_.ProcessId))" }) -join ", "
+                Write-OGLogEntry "Completed stopping processes: $ProcInfoS"
+            }
+        }
+    }
+}
+
+
+<#
+.SYNOPSIS
+Get the locking processes of a path or file using the sysinternals Handle.exe
+
+.DESCRIPTION
+Get the locking processes of a path or file using the sysinternals Handle.exe
+
+.PARAMETER Path
+Path to check what process is locking it
+
+.PARAMETER HandleApp
+Path to Sysinternals Handle.exe application. This will auto download if not present to the module root.
+
+.EXAMPLE
+Get-OGLockingProcess -Path "C:\Users\rkcsj\AppData\Local\Microsoft\Outlook\richie.schuster@sccmog.com.ost" -HandleApp C:\temp\Tools\Handle\handle.exe
+
+.EXAMPLE
+Get-OGLockingProcess -Path "C:\Users\rkcsj\AppData\Local\Microsoft\Outlook\richie.schuster@sccmog.com.ost"
+
+.NOTES
+    Name:       Get-OGLockingProcess
+    Original:   https://www.powershellgallery.com/packages/LockingProcessKiller/0.9.0/Content/LockingProcessKiller.psm1
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-03-14
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2022-03-14 Function Created
+#>
+function Get-OGLockingProcess{
+    [OutputType([array])]
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $true,Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [object] $Path,
+        [Parameter(Mandatory = $false,Position = 1)]
+        [string] $HandleApp = "$global:PS_OG_ModuleRoot\Tools\Handle\handle.exe"
+    )
+    $lockingProcs = @()
+    try{
+        if (!(Test-Path "$($HandleApp)" -PathType Leaf)){
+            $HandleApp = Get-OGHandleApp
+        }
+    }
+    catch{
+        $errMsg = "Failed to download Handle App. Error: $_"
+        Write-OGLogEntry $errMsg -logtype Error
+        throw $errMsg
+    }
+    if ($HandleApp){
+        try{
+            $PathName = (Resolve-Path -Path $Path).Path.TrimEnd("\") # Ensures proper .. expansion & slashe \/ type
+        }
+        catch{
+            $errMsg = "Failed to resolve path [Path: $($Path)]. Error: $_"
+            Write-OGLogEntry $errMsg -logtype Error
+            throw $errMsg
+        }
+        try{
+            $LineS = & $HandleApp -accepteula -u $PathName -nobanner
+            Write-OGLogEntry "Launched Handle App [Path: $($HandleApp)]"
+            Write-OGLogEntry "Handle App Args [Args: $($Path)]"
+        }
+        catch{
+            $errMsg = "Failed to execute Handle app [Path: $($HandleApp)]. Error: $_"
+            Write-OGLogEntry $errMsg -logtype Error
+            throw $errMsg
+        }
+        if (($LineS | Measure-Object).Count -gt 0){
+            foreach ($Line in $LineS) {
+                if ($Line -match "(?<proc>.+)\s+pid: (?<pid>\d+)\s+type: (?<type>\w+)\s+(?<user>.+)\s+(?<hnum>\w+)\:\s+(?<path>.*)\s*") {
+                    $Proc = $Matches.proc.Trim()
+                    if (@("handle.exe", "Handle64.exe") -notcontains $Proc) {
+                        $Retval = [PSCustomObject]@{
+                            Process = $Proc
+                            Pid     = $Matches.pid
+                            User    = $Matches.user.Trim()
+                            #Handle = $Matches.hnum
+                            Path    = $Matches.path
+                        }
+                        $lockingProcs += $Retval
+                    }
+                }
+            }
+            if (($lockingProcs | Measure-Object).Count -gt 0){
+                $lockingProcsInfo = ($lockingProcs | Select-Object -Unique | ForEach-Object { "$($_.Process)($($_.PID))" }) -join ", "
+                Write-OGLogEntry "[Locking Processe(s): $($lockingProcsInfo) ]"
+                return $lockingProcs
+            }
+            else{
+                Write-OGLogEntry "[Locking Processe(s): 0 ]"
+                return $false
+            } 
+        }
+        else{
+            return $false
+        }        
+    }
+}
 
 ##################################################################################################################################
 # End Process Region
@@ -1790,10 +1998,10 @@ Install or uninstall the new edge profile
 Name of the Profile to create
 
 .EXAMPLE
-New-OGMSEdgeProfile -Mode Install -ProfileName "Clarivate"
+New-OGMSEdgeProfile -Mode Install -ProfileName "SCCMOG"
 
 .EXAMPLE
-New-OGMSEdgeProfile -Mode Unintall -ProfileName "Clarivate"
+New-OGMSEdgeProfile -Mode Unintall -ProfileName "SCCMOG"
 
 .NOTES
     Name:       New-OGMSEdgeProfile       
@@ -2417,7 +2625,7 @@ function Set-OGTaskREPermissions {
         [Parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
         [string]$TaskName
     )
-    $Task = Get-ScheduledTask | Where-Object {$_.TaskName -like "$($TaskName)"}
+    $Task = Get-ScheduledTask | Where-Object { $_.TaskName -like "$($TaskName)" }
     if (!($Task)){
         $eM = "Failed to find task [Name: $($TaskName)]"
         Write-OGLogEntry $eM -logType Error
@@ -3012,7 +3220,9 @@ $Export = @(
     "Export-OGEdgeBookmarksHTML",
     "Set-OGReadExecuteFileUsers",
     "Set-OGTaskREPermissions",
-    "Set-OGReadUsers"
+    "Set-OGReadUsers",
+    "Invoke-OGKillProcess",
+    "Get-OGLockingProcess"
 )
 
 foreach ($module in $Export){

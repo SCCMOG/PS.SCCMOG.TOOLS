@@ -29,6 +29,7 @@ function IntializePSSCCMOGModule () {
     $defaultLogDetails = getDefaultLogDetails
     $global:PS_SCCMOG_cScriptName = "$($defaultLogDetails.ScriptName)"
     $global:PS_NEWOGLogEntry_DEFAULT_LOGPATH = "$($defaultLogDetails.DefaultLogFilePath)"
+    $global:PS_OG_ModuleRoot = $PSScriptRoot
 
     #Script
     $script:PS_NEWOGLogEntry_DEFAULT_EventLog = "SCCMOG"
@@ -36,11 +37,13 @@ function IntializePSSCCMOGModule () {
     $script:PS_NEWOGLogEntry_DEFAULT_LogtoEventLog = $false
     $script:UseMutex = $false
     $script:PS_NEWOGLogEntry_MutexName = "Loggit"
+    
 }
 
 IntializePSSCCMOGModule
 
 Write-Verbose "PS.SCCMOG.Tools Module will write to Global Variable: $global:PS_NEWOGLogEntry_DEFAULT_LOGPATH" -Verbose
+Write-Verbose "PS.SCCMOG.Tools Module Root Global Variable: $($global:PS_ModuleRoot)" -Verbose
 Write-Verbose "PS.SCCMOG.Tools Module event Log logging enabled: $script:PS_NEWOGLogEntry_DEFAULT_LogtoEventLog" -Verbose
 Write-Verbose "PS.SCCMOG.Tools Module will write to Event Log: '$script:PS_NEWOGLogEntry_DEFAULT_EventLog' Event Source: '$script:PS_NEWOGLogEntry_DEFAULT_EventLogSource'" -Verbose
 Write-Verbose "PS.SCCMOG.Tools Module Use logging Mutex: $($script:UseMutex)" -Verbose
