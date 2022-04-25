@@ -509,7 +509,9 @@ function Set-OGHKUDrive {
                 catch{
                     Write-OGLogEntry "Failed mapping HKEY_USERS registry drive to HKU: Error: $_" -logtype Error
                 }
-                
+            }
+            else{
+                Write-OGLogEntry "HKEY_USERS registry drive already mapped to HKU:" -logType Warning
             }
         }
         "Unmap" {
@@ -517,12 +519,15 @@ function Set-OGHKUDrive {
                 Write-OGLogEntry "Attempting to remove mapping of HKEY_USERS registry drive to HKU:"
                 try{
                     Remove-PSDrive -Name HKU -Force | Out-Null
-                    Write-OGLogEntry "Success removing mapping of HKEY_USERS registry drive to HKU: Error: $_" -logtype Error
+                    Write-OGLogEntry "Success removing mapping of HKEY_USERS registry drive to HKU:"
                 }
                 catch{
                     Write-OGLogEntry "Failed removing mapping of HKEY_USERS registry drive to HKU: Error: $_" -logtype Error
                 }
                 
+            }
+            else{
+                Write-OGLogEntry "HKEY_USERS registry drive is not mapped to HKU:" -logType Warning
             }
         }
     }
