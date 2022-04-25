@@ -801,6 +801,96 @@ function Get-OGOneDriveKFMState {
 }
 
 
+
+<#
+.SYNOPSIS
+Get OneDrive Accounts for User
+
+.DESCRIPTION
+Get OneDrive Accounts for Users. If found returns them.
+
+.PARAMETER LoggedOnUser
+PS Obj returned from Get-OGLoggedOnUserCombined
+
+.PARAMETER AccountType
+Type of account to search registry for.
+
+.EXAMPLE
+Get-OGOneDriveAccounts -LoggedOnUser $objLoggedOnUser -AccountType Business
+Returns only Business accounts if found.
+
+.EXAMPLE
+Get-OGOneDriveAccounts -LoggedOnUser $objLoggedOnUser -AccountType Personal
+Returns only Personal accounts if found.
+
+.EXAMPLE
+Get-OGOneDriveAccounts -LoggedOnUser $objLoggedOnUser -AccountType Both
+Returns either Business or Persona accounts if found.
+
+.NOTES
+    Name:       Get-OGOneDriveAccounts       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-04-25
+    Updated:    -
+#>
+function Get-OGOneDriveAccounts {
+    param(
+        [parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [PSCustomObject]$LoggedOnUser,
+        [parameter(Mandatory = $true, Position = 1,ValueFromPipeline)]
+        [ValidateNotNullOrEmpty()]
+        [validateset("Business", "Personal", "Both")]
+        [PSCustomObject]$AccountType
+    )
+    $OneDriveAccounts = @()
+    $LoggedOnUser = $objLoggedOnUser
+    Write-OGLogEntry "Getting OneDrive Accounts for [User: $($LoggedOnUser.USERNAME)]"
+    $OneDriveAcPath = "Software\Microsoft\OneDrive\Accounts"
+    if(!(Get-PSDrive | Where-Object {$_.Name -eq "HKU"})){New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null}
+    $UserOneDriveAcPath = "HKU:\$($LoggedOnUser.SID)\$($OneDriveAcPath)"
+    $OneDriveRegAccounts = Get-ChildItem -Path "$($UserOneDriveAcPath)"
+    switch($AccountType){
+        "Business"{
+            $OneDriveBusinessPaths = $OneDriveRegAccounts  | Where-Object { ($_.PSIsContainer)-and($_.Name -like "*$($AccountType)*") } | Select-Object Name
+        }
+        "Personal"{
+            $OneDriveBusinessPaths = $OneDriveRegAccounts  | Where-Object { ($_.PSIsContainer)-and($_.Name -like "*$($AccountType)*") } | Select-Object Name
+        }
+        "Both"{
+            $OneDriveBusinessPaths = $OneDriveRegAccounts  | Where-Object { ($_.PSIsContainer)-and(($_.Name -like "*Personal*")-or($_.Name -like "*Business*"))} | Select-Object Name
+        }
+    }
+    if (($OneDriveBusinessPaths|Measure-Object).Count -gt 0){
+        Write-OGLogEntry "Found OneDrive Business Key [User: $($LoggedOnUser.USERNAME)]"
+        foreach ($path in $OneDriveBusinessPaths) { # }
+            $OneDriveAc = $null
+            $OneDriveAc = Get-OGRegistryKey -RegKey "$(($path.Name).Replace('HKEY_USERS','HKU:'))"
+            if ((Test-Path -Path "$($OneDriveAc.UserFolder)" -PathType Container)-and($OneDriveAc.UserEmail)){
+                Write-OGLogEntry "Found Business Account [Name: $($OneDriveAc.DisplayName)] [Path: $($OneDriveAc.UserFolder)]"
+                $OneDriveAccounts += $OneDriveAc
+                # foreach($p in $OneDriveKFMState.PSObject.Properties){ 
+                #     if ($p.Value -like "$($LoggedOnUser.USERPROFILE)*"){
+                #         return $OneDriveKFMState
+                #     }
+                # }
+            }
+            else{
+                Write-OGLogEntry "OneDrive Account Path invalid [Path: $($OneDriveAc.UserFolder)]" -logtype Warning
+            }
+        }
+        if (($OneDriveAccounts|Measure-Object).Count -gt 0){
+            return $OneDriveAccounts
+        }
+
+    }
+    return $false
+}
+
+
 <#
 .SYNOPSIS
 Creates a new local Admin account.
@@ -867,7 +957,8 @@ $Export = @(
     "Get-OGLoggedOnUserWMI",
     "Get-OGLoggedOnUserCombined",
     "Get-OGOneDriveKFMState",
-    "New-OGLocalAdmin"
+    "New-OGLocalAdmin",
+    "Get-OGOneDriveAccounts"
 )
 
 foreach ($module in $Export){
