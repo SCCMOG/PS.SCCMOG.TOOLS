@@ -55,20 +55,20 @@
     1.0.0 - (2021-06-14) Function created
     1.1.0 - 2021-08-19 - Added Azure AD information.
 #>  
-function Get-OGLoggedOnUser{
+function Get-OGLoggedOnUser {
     [cmdletbinding()]
     $CurrentLoggedOnUser = $null
     $AllUserCheck = @()
     Write-OGLogEntry -Logtext "Getting Currently logged on user for machine: $($ENV:COMPUTERNAME)"
     $UserQuery = query user
-    foreach($User in $UserQuery){
-        $Username        = $User.Substring(1,22).trim()
-        $SessionName     = $User.Substring(23,19).trim()
-        $Id              = $User.Substring(42,4).trim()
-        $State           = $User.Substring(46,8).trim()
-        $IdleTime        = $User.Substring(54,11).trim()
+    foreach ($User in $UserQuery) {
+        $Username = $User.Substring(1, 22).trim()
+        $SessionName = $User.Substring(23, 19).trim()
+        $Id = $User.Substring(42, 4).trim()
+        $State = $User.Substring(46, 8).trim()
+        $IdleTime = $User.Substring(54, 11).trim()
 
-        $UserCheck  = New-Object psobject
+        $UserCheck = New-Object psobject
         $UserCheck | Add-Member -MemberType NoteProperty -Name Username -Value        $Username
         $UserCheck | Add-Member -MemberType NoteProperty -Name SessionName -Value     $SessionName
         $UserCheck | Add-Member -MemberType NoteProperty -Name Id -Value              $Id
@@ -79,60 +79,58 @@ function Get-OGLoggedOnUser{
     #Remove first entry.
     $skip = $true
     $ParsedAllUserArray = @()
-    foreach($line in $AllUserCheck){
-        if($skip -eq $true){
+    foreach ($line in $AllUserCheck) {
+        if ($skip -eq $true) {
             $skip = $false
         }
-        else{
+        else {
             $ParsedAllUserArray += $line
         }
     }
     #Check session time
-    foreach($ParsedUserCheck in $ParsedAllUserArray){
-        if(($ParsedUserCheck.SessionName -ne "")){
-            if($ParsedUserCheck.IdleTime -match '^[0-9]+$'){
-                if($ParsedUserCheck.IdleTime -le '60'){
+    foreach ($ParsedUserCheck in $ParsedAllUserArray) {
+        if (($ParsedUserCheck.SessionName -ne "")) {
+            if ($ParsedUserCheck.IdleTime -match '^[0-9]+$') {
+                if ($ParsedUserCheck.IdleTime -le '60') {
                     $ActiveUser = $ParsedUserCheck
                 }
-                else{
+                else {
                     $ActiveUser = $null
                 }
             }
-            else{
+            else {
                 $ActiveUser = $ParsedUserCheck
             }
         }
     }
-    if ($ActiveUser){
-        $CurrentlyLoggedOnUserSIDs = ((Get-ChildItem "registry::HKU" -ErrorAction SilentlyContinue).name | Where-Object { (($_ -notlike "*_classes") -and ($_ -notlike "*.default") -and ($_ -notlike "*S-1-5-18") -and ($_ -notlike "*S-1-5-19"))}) -replace "HKEY_USERS\\",""
-        foreach($CurrentlyLoggedOnUserSID in $CurrentlyLoggedOnUserSIDs)
-        {
+    if ($ActiveUser) {
+        $CurrentlyLoggedOnUserSIDs = ((Get-ChildItem "registry::HKU" -ErrorAction SilentlyContinue).name | Where-Object { (($_ -notlike "*_classes") -and ($_ -notlike "*.default") -and ($_ -notlike "*S-1-5-18") -and ($_ -notlike "*S-1-5-19")) }) -replace "HKEY_USERS\\", ""
+        foreach ($CurrentlyLoggedOnUserSID in $CurrentlyLoggedOnUserSIDs) {
             $CLOUsername = (Get-ItemProperty "Registry::hku\$CurrentlyLoggedOnUserSID\Volatile Environment" -ErrorAction SilentlyContinue).Username
-            if($CLOUsername -eq $ActiveUser.UserName)
-            {
+            if ($CLOUsername -eq $ActiveUser.UserName) {
                 $SID_RegVirtualEnv = Get-ItemProperty "Registry::hku\$($CurrentlyLoggedOnUserSID)\Volatile Environment"
                 $MSO365UserIdentityRoot = "Registry::hku\$($CurrentlyLoggedOnUserSID)\SOFTWARE\Microsoft\Office\16.0\Common\Identity\Identities"
                 $MSIdentityCacheCurrentUser = "Registry::hklm\SOFTWARE\Microsoft\IdentityStore\Cache\$($CurrentlyLoggedOnUserSID)\IdentityCache\$($CurrentLoggedOnUserSID)"
-                if(Test-Path $MSO365UserIdentityRoot){
-                    $MSO365UserIdentityRoot = Get-ChildItem "$MSO365UserIdentityRoot" | Where-Object {$_.Name -like "*_ADAL"}
-                    if ($MSO365UserIdentityRoot){
+                if (Test-Path $MSO365UserIdentityRoot) {
+                    $MSO365UserIdentityRoot = Get-ChildItem "$MSO365UserIdentityRoot" | Where-Object { $_.Name -like "*_ADAL" }
+                    if ($MSO365UserIdentityRoot) {
                         $objLoggedOnUserADAL = $MSO365UserIdentityRoot | Select-Object -First 1
                         $AADUName = "$($objLoggedOnUserADAL.GetValue("EmailAddress"))"
                         $AADObjID = "$($objLoggedOnUserADAL.GetValue("ProviderId"))"
                     }
                 }
-                if ($AADUName -like ""){
-                    if(Test-Path $MSIdentityCacheCurrentUser) {
+                if ($AADUName -like "") {
+                    if (Test-Path $MSIdentityCacheCurrentUser) {
                         $objCurrentUserMSCachedIdentity = Get-ItemProperty "$MSIdentityCacheCurrentUser"
                         $AADUName = "$($objCurrentUserMSCachedIdentity.UserName)"
                         $AADObjID = "NA"
                     }
-                    else{
+                    else {
                         $AADUName = "NA"
                         $AADObjID = "NA"
                     }
                 }
-                $LoggedInUser  = New-Object psobject
+                $LoggedInUser = New-Object psobject
                 $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERNAME -Value            $SID_RegVirtualEnv.USERNAME
                 $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERPROFILE -Value         $SID_RegVirtualEnv.USERPROFILE
                 $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERDOMAIN -Value          $SID_RegVirtualEnv.USERDOMAIN
@@ -150,7 +148,7 @@ function Get-OGLoggedOnUser{
             }
         }
     }
-    Else{
+    Else {
         Write-OGLogEntry -Logtext "ERROR No logged on user for machine: $($ENV:COMPUTERNAME)" -logType Error
         return $CurrentLoggedOnUser
     }
@@ -212,75 +210,74 @@ function Get-OGLoggedOnUser{
     2.0.0 -  2022-02-17 Modified WMI profiles search for Volatile ENV 
 
 #>  
-function Get-OGLoggedOnUserCombined{
+function Get-OGLoggedOnUserCombined {
     [cmdletbinding()]
     $CurrentLoggedOnUser = $null
     Write-OGLogEntry -Logtext "Getting current profile list from from WMI for machine: $($ENV:COMPUTERNAME)"
-    $UserProfiles = Get-WmiObject -Class Win32_UserProfile | Where-Object {($_.SID -notmatch "^S-1-5-\d[18|19|20]$")}
+    $UserProfiles = Get-WmiObject -Class Win32_UserProfile | Where-Object { ($_.SID -notmatch "^S-1-5-\d[18|19|20]$") }
     Write-OGLogEntry -Logtext "Found $(($UserProfiles|Measure-Object).Count) user profile(s) in WMI for machine: $($ENV:COMPUTERNAME)"
     Write-OGLogEntry -Logtext "Searching user registry profile(s) for Volatile Environment key."
     $ActiveUser = $null
-    foreach ($profile in $UserProfiles){
-        if ((Test-Path -Path "Registry::hku\$($profile.SID)\Volatile Environment" -PathType Container)-and($profile.Loaded)){
+    foreach ($profile in $UserProfiles) {
+        if ((Test-Path -Path "Registry::hku\$($profile.SID)\Volatile Environment" -PathType Container) -and ($profile.Loaded)) {
             Write-OGLogEntry -Logtext "Found active user loaded."
             $ActiveUser = $profile
             break
         }
     }
-    if (($ActiveUser|Measure-Object).Count -eq 1){
-            $SID_RegVirtualEnv = Get-ItemProperty "Registry::hku\$($ActiveUser.SID)\Volatile Environment" -ErrorAction SilentlyContinue
-            if($SID_RegVirtualEnv)
-            {
-                $MSO365UserIdentityRoot = "Registry::hku\$($ActiveUser.SID)\SOFTWARE\Microsoft\Office\16.0\Common\Identity\Identities"
-                $MSIdentityCacheCurrentUser = "Registry::hklm\SOFTWARE\Microsoft\IdentityStore\Cache\$($ActiveUser.SID)\IdentityCache\$($ActiveUser.SID)"
-                $AuthLogonUI = "Registry::hklm\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\LogonUI"
-                if(Test-Path $MSO365UserIdentityRoot){
-                    $MSO365UserIdentityRoot = Get-ChildItem "$MSO365UserIdentityRoot" | Where-Object {$_.Name -like "*_ADAL"}
-                    if ($MSO365UserIdentityRoot){
-                        $objLoggedOnUserADAL = $MSO365UserIdentityRoot | Select-Object -First 1
-                        $AADUName = "$($objLoggedOnUserADAL.GetValue("EmailAddress"))"
-                        $AADObjID = "$($objLoggedOnUserADAL.GetValue("ProviderId"))"
-                    }
+    if (($ActiveUser | Measure-Object).Count -eq 1) {
+        $SID_RegVirtualEnv = Get-ItemProperty "Registry::hku\$($ActiveUser.SID)\Volatile Environment" -ErrorAction SilentlyContinue
+        if ($SID_RegVirtualEnv) {
+            $MSO365UserIdentityRoot = "Registry::hku\$($ActiveUser.SID)\SOFTWARE\Microsoft\Office\16.0\Common\Identity\Identities"
+            $MSIdentityCacheCurrentUser = "Registry::hklm\SOFTWARE\Microsoft\IdentityStore\Cache\$($ActiveUser.SID)\IdentityCache\$($ActiveUser.SID)"
+            $AuthLogonUI = "Registry::hklm\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\LogonUI"
+            if (Test-Path $MSO365UserIdentityRoot) {
+                $MSO365UserIdentityRoot = Get-ChildItem "$MSO365UserIdentityRoot" | Where-Object { $_.Name -like "*_ADAL" }
+                if ($MSO365UserIdentityRoot) {
+                    $objLoggedOnUserADAL = $MSO365UserIdentityRoot | Select-Object -First 1
+                    $AADUName = "$($objLoggedOnUserADAL.GetValue("EmailAddress"))"
+                    $AADObjID = "$($objLoggedOnUserADAL.GetValue("ProviderId"))"
                 }
-                if ($AADUName -like ""){
-                    if(Test-Path $MSIdentityCacheCurrentUser) {
-                        $objCurrentUserMSCachedIdentity = Get-ItemProperty "$MSIdentityCacheCurrentUser"
-                        $AADUName = "$($objCurrentUserMSCachedIdentity.UserName)"
-                        $AADObjID = "NA"
-                    }
-                    else{
-                        $AADUName = "NA"
-                        $AADObjID = "NA"
-                    }
-                }
-                if (Test-Path $AuthLogonUI){
-                    $AuthLogonUIData = Get-ItemProperty "$AuthLogonUI" 
-                    if ($AuthLogonUIData.LastLoggedOnDisplayName){
-                        $UserDisplayName = "$($AuthLogonUIData.LastLoggedOnDisplayName)"
-                    }
-                    else{
-                        $UserDisplayName = "$($SID_RegVirtualEnv.USERNAME)"
-                    }
-                }
-                $LoggedInUser  = New-Object psobject
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERNAME -Value            $SID_RegVirtualEnv.USERNAME
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERPROFILE -Value         $SID_RegVirtualEnv.USERPROFILE
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERDOMAIN -Value          $SID_RegVirtualEnv.USERDOMAIN
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name SID -Value                 $ActiveUser.SID
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name DNSDOMAIN -Value           $SID_RegVirtualEnv.USERDNSDOMAIN
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name LOGONSERVER -Value         $SID_RegVirtualEnv.LOGONSERVER
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name HOMEPATH -Value            $SID_RegVirtualEnv.HOMEPATH
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name HOMEDRIVE -Value           $SID_RegVirtualEnv.HOMEDRIVE
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name APPDATA -Value             $SID_RegVirtualEnv.APPDATA
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name LOCALAPPDATA -Value        $SID_RegVirtualEnv.LOCALAPPDATA
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name Domain_SamAccount -Value   "$($SID_RegVirtualEnv.USERDOMAIN)\$($SID_RegVirtualEnv.USERNAME)"
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name Email -Value               $AADUName
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name AADUserObjID -Value        $AADObjID
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name DisplayName -Value         $UserDisplayName
-                $CurrentLoggedOnUser = $LoggedInUser
             }
+            if ($AADUName -like "") {
+                if (Test-Path $MSIdentityCacheCurrentUser) {
+                    $objCurrentUserMSCachedIdentity = Get-ItemProperty "$MSIdentityCacheCurrentUser"
+                    $AADUName = "$($objCurrentUserMSCachedIdentity.UserName)"
+                    $AADObjID = "NA"
+                }
+                else {
+                    $AADUName = "NA"
+                    $AADObjID = "NA"
+                }
+            }
+            if (Test-Path $AuthLogonUI) {
+                $AuthLogonUIData = Get-ItemProperty "$AuthLogonUI" 
+                if ($AuthLogonUIData.LastLoggedOnDisplayName) {
+                    $UserDisplayName = "$($AuthLogonUIData.LastLoggedOnDisplayName)"
+                }
+                else {
+                    $UserDisplayName = "$($SID_RegVirtualEnv.USERNAME)"
+                }
+            }
+            $LoggedInUser = New-Object psobject
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERNAME -Value            $SID_RegVirtualEnv.USERNAME
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERPROFILE -Value         $SID_RegVirtualEnv.USERPROFILE
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERDOMAIN -Value          $SID_RegVirtualEnv.USERDOMAIN
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name SID -Value                 $ActiveUser.SID
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name DNSDOMAIN -Value           $SID_RegVirtualEnv.USERDNSDOMAIN
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name LOGONSERVER -Value         $SID_RegVirtualEnv.LOGONSERVER
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name HOMEPATH -Value            $SID_RegVirtualEnv.HOMEPATH
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name HOMEDRIVE -Value           $SID_RegVirtualEnv.HOMEDRIVE
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name APPDATA -Value             $SID_RegVirtualEnv.APPDATA
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name LOCALAPPDATA -Value        $SID_RegVirtualEnv.LOCALAPPDATA
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name Domain_SamAccount -Value   "$($SID_RegVirtualEnv.USERDOMAIN)\$($SID_RegVirtualEnv.USERNAME)"
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name Email -Value               $AADUName
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name AADUserObjID -Value        $AADObjID
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name DisplayName -Value         $UserDisplayName
+            $CurrentLoggedOnUser = $LoggedInUser
+        }
     }
-    Else{
+    Else {
         Write-OGLogEntry -Logtext "ERROR No logged on active user for machine: $($ENV:COMPUTERNAME)" -logType Error
         return $CurrentLoggedOnUser
     }
@@ -340,54 +337,53 @@ function Get-OGLoggedOnUserCombined{
     Version history:
     1.0.0 - 2021-11-25 Function created
 #>  
-function Get-OGLoggedOnUserWMI{
+function Get-OGLoggedOnUserWMI {
     [cmdletbinding()]
     $CurrentLoggedOnUser = $null
     Write-OGLogEntry -Logtext "Getting currently logged from WMI on user for machine: $($ENV:COMPUTERNAME)"
-    $ActiveUser = Get-WmiObject -Class Win32_UserProfile | Where-Object {($_.SID -notmatch "^S-1-5-\d[18|19|20]$")} | Sort-Object -Property LastUseTime -Descending | Select-Object -First 1
-    if ($ActiveUser.Loaded){
-            $SID_RegVirtualEnv = Get-ItemProperty "Registry::hku\$($ActiveUser.SID)\Volatile Environment" -ErrorAction SilentlyContinue
-            if($SID_RegVirtualEnv)
-            {
-                $MSO365UserIdentityRoot = "Registry::hku\$($ActiveUser.SID)\SOFTWARE\Microsoft\Office\16.0\Common\Identity\Identities"
-                $MSIdentityCacheCurrentUser = "Registry::hklm\SOFTWARE\Microsoft\IdentityStore\Cache\$($ActiveUser.SID)\IdentityCache\$($ActiveUser.SID)"
-                if(Test-Path $MSO365UserIdentityRoot){
-                    $MSO365UserIdentityRoot = Get-ChildItem "$MSO365UserIdentityRoot" | Where-Object {$_.Name -like "*_ADAL"}
-                    if ($MSO365UserIdentityRoot){
-                        $objLoggedOnUserADAL = $MSO365UserIdentityRoot | Select-Object -First 1
-                        $AADUName = "$($objLoggedOnUserADAL.GetValue("EmailAddress"))"
-                        $AADObjID = "$($objLoggedOnUserADAL.GetValue("ProviderId"))"
-                    }
+    $ActiveUser = Get-WmiObject -Class Win32_UserProfile | Where-Object { ($_.SID -notmatch "^S-1-5-\d[18|19|20]$") } | Sort-Object -Property LastUseTime -Descending | Select-Object -First 1
+    if ($ActiveUser.Loaded) {
+        $SID_RegVirtualEnv = Get-ItemProperty "Registry::hku\$($ActiveUser.SID)\Volatile Environment" -ErrorAction SilentlyContinue
+        if ($SID_RegVirtualEnv) {
+            $MSO365UserIdentityRoot = "Registry::hku\$($ActiveUser.SID)\SOFTWARE\Microsoft\Office\16.0\Common\Identity\Identities"
+            $MSIdentityCacheCurrentUser = "Registry::hklm\SOFTWARE\Microsoft\IdentityStore\Cache\$($ActiveUser.SID)\IdentityCache\$($ActiveUser.SID)"
+            if (Test-Path $MSO365UserIdentityRoot) {
+                $MSO365UserIdentityRoot = Get-ChildItem "$MSO365UserIdentityRoot" | Where-Object { $_.Name -like "*_ADAL" }
+                if ($MSO365UserIdentityRoot) {
+                    $objLoggedOnUserADAL = $MSO365UserIdentityRoot | Select-Object -First 1
+                    $AADUName = "$($objLoggedOnUserADAL.GetValue("EmailAddress"))"
+                    $AADObjID = "$($objLoggedOnUserADAL.GetValue("ProviderId"))"
                 }
-                if ($AADUName -like ""){
-                    if(Test-Path $MSIdentityCacheCurrentUser) {
-                        $objCurrentUserMSCachedIdentity = Get-ItemProperty "$MSIdentityCacheCurrentUser"
-                        $AADUName = "$($objCurrentUserMSCachedIdentity.UserName)"
-                        $AADObjID = "NA"
-                    }
-                    else{
-                        $AADUName = "NA"
-                        $AADObjID = "NA"
-                    }
-                }
-                $LoggedInUser  = New-Object psobject
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERNAME -Value            $SID_RegVirtualEnv.USERNAME
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERPROFILE -Value         $SID_RegVirtualEnv.USERPROFILE
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERDOMAIN -Value          $SID_RegVirtualEnv.USERDOMAIN
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name SID -Value                 $ActiveUser.SID
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name DNSDOMAIN -Value           $SID_RegVirtualEnv.USERDNSDOMAIN
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name LOGONSERVER -Value         $SID_RegVirtualEnv.LOGONSERVER
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name HOMEPATH -Value            $SID_RegVirtualEnv.HOMEPATH
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name HOMEDRIVE -Value           $SID_RegVirtualEnv.HOMEDRIVE
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name APPDATA -Value             $SID_RegVirtualEnv.APPDATA
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name LOCALAPPDATA -Value        $SID_RegVirtualEnv.LOCALAPPDATA
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name Domain_SamAccount -Value   "$($SID_RegVirtualEnv.USERDOMAIN)\$($SID_RegVirtualEnv.USERNAME)"
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name Email -Value               $AADUName
-                $LoggedInUser | Add-Member -MemberType NoteProperty -Name AADUserObjID -Value        $AADObjID
-                $CurrentLoggedOnUser = $LoggedInUser
             }
+            if ($AADUName -like "") {
+                if (Test-Path $MSIdentityCacheCurrentUser) {
+                    $objCurrentUserMSCachedIdentity = Get-ItemProperty "$MSIdentityCacheCurrentUser"
+                    $AADUName = "$($objCurrentUserMSCachedIdentity.UserName)"
+                    $AADObjID = "NA"
+                }
+                else {
+                    $AADUName = "NA"
+                    $AADObjID = "NA"
+                }
+            }
+            $LoggedInUser = New-Object psobject
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERNAME -Value            $SID_RegVirtualEnv.USERNAME
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERPROFILE -Value         $SID_RegVirtualEnv.USERPROFILE
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name USERDOMAIN -Value          $SID_RegVirtualEnv.USERDOMAIN
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name SID -Value                 $ActiveUser.SID
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name DNSDOMAIN -Value           $SID_RegVirtualEnv.USERDNSDOMAIN
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name LOGONSERVER -Value         $SID_RegVirtualEnv.LOGONSERVER
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name HOMEPATH -Value            $SID_RegVirtualEnv.HOMEPATH
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name HOMEDRIVE -Value           $SID_RegVirtualEnv.HOMEDRIVE
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name APPDATA -Value             $SID_RegVirtualEnv.APPDATA
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name LOCALAPPDATA -Value        $SID_RegVirtualEnv.LOCALAPPDATA
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name Domain_SamAccount -Value   "$($SID_RegVirtualEnv.USERDOMAIN)\$($SID_RegVirtualEnv.USERNAME)"
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name Email -Value               $AADUName
+            $LoggedInUser | Add-Member -MemberType NoteProperty -Name AADUserObjID -Value        $AADObjID
+            $CurrentLoggedOnUser = $LoggedInUser
+        }
     }
-    Else{
+    Else {
         Write-OGLogEntry -Logtext "ERROR No logged on user for machine: $($ENV:COMPUTERNAME)" -logType Error
         return $CurrentLoggedOnUser
     }
@@ -428,7 +424,7 @@ Invoke-OGStartProcessAsCurrentUser -FilePath "$scriptRoot\Notification\Notify_Us
     Version history:
     1.0.0 - 2021-09-21 Function created
 #>
-function Invoke-OGStartProcessAsCurrentUser{
+function Invoke-OGStartProcessAsCurrentUser {
     param(
         [parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
@@ -441,7 +437,7 @@ function Invoke-OGStartProcessAsCurrentUser{
         Write-OGLogEntry $message -logtype Error
         throw $message
     }
-$Source = @"
+    $Source = @"
 using System;
 using System.Runtime.InteropServices;
 
@@ -713,14 +709,14 @@ namespace Runasuser
 }
 "@ 
     # Load the custom type
-    try{
+    try {
         Add-Type -ReferencedAssemblies 'System', 'System.Runtime.InteropServices' -TypeDefinition $Source -Language CSharp -ErrorAction Stop
         Write-OGLogEntry "Attempting to launch:' $FilePath'$(if ($Arguments){" with Argument: '$($Arguments)'"}) as current logged on user."
         # Run PS as user to display the message box
         [Runasuser.ProcessExtensions]::StartProcessAsCurrentUser("$env:windir\System32\WindowsPowerShell\v1.0\Powershell.exe", " -ExecutionPolicy Bypass -NoProfile -WindowStyle Hidden -File `"$FilePath`" $Arguments") | Out-Null
         Write-OGLogEntry "Success launching:' $FilePath'$(if ($Arguments){" with Argument: '$($Arguments)'"}) as current logged on user."
     }
-    catch{
+    catch {
         $message = "Failed launching:' $FilePath'$(if ($Arguments){" with Argument: '$($Arguments)'"}) as current logged on user. Error: $_"
         Write-OGLogEntry $message -logtype Error
         throw $message
@@ -752,26 +748,26 @@ Get-OGOneDriveKFMState -LoggedOnUser $LoggedOnUse
 #>
 function Get-OGOneDriveKFMState {
     param(
-        [parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
         [ValidateNotNullOrEmpty()]
         [PSCustomObject]$LoggedOnUser
     )
     Write-OGLogEntry "Getting OneDrive KFM state for [User: $($LoggedOnUser.USERNAME)]"
     $OneDriveAcPath = "Software\Microsoft\OneDrive\Accounts"
     $Shell_reg = "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders"
-    if(!(Get-PSDrive | Where-Object {$_.Name -eq "HKU"})){New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null}
+    if (!(Get-PSDrive | Where-Object { $_.Name -eq "HKU" })) { New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null }
     $UserOneDriveAcPath = "HKU:\$($LoggedOnUser.SID)\$($OneDriveAcPath)"
     $UserShellPath = "HKU:\$($LoggedOnUser.SID)\$($Shell_reg)"
-    $OneDriveBusinessPaths = Get-ChildItem -Path "$($UserOneDriveAcPath)" | Where-Object { ($_.PSIsContainer)-and($_.Name -like "*Business*") } | Select-Object Name
-    if ($OneDriveBusinessPaths){
+    $OneDriveBusinessPaths = Get-ChildItem -Path "$($UserOneDriveAcPath)" | Where-Object { ($_.PSIsContainer) -and ($_.Name -like "*Business*") } | Select-Object Name
+    if ($OneDriveBusinessPaths) {
         Write-OGLogEntry "Found OneDrive Business Key [User: $($LoggedOnUser.USERNAME)]"
         foreach ($path in $OneDriveBusinessPaths) {
             $OnedriveData = Get-OGRegistryKey -RegKey "$(($path.Name).Replace('HKEY_USERS','HKU:'))"
-            if ($OnedriveData.KFMState){
+            if ($OnedriveData.KFMState) {
                 Write-OGLogEntry "KFMState is set returning values."
                 $OneDriveKFMState = $OnedriveData.KFMState | ConvertFrom-Json
-                foreach($p in $OneDriveKFMState.PSObject.Properties){ 
-                    if ($p.Value -like "$($LoggedOnUser.USERPROFILE)*"){
+                foreach ($p in $OneDriveKFMState.PSObject.Properties) { 
+                    if ($p.Value -like "$($LoggedOnUser.USERPROFILE)*") {
                         return $OneDriveKFMState
                     }
                 }
@@ -781,7 +777,7 @@ function Get-OGOneDriveKFMState {
         Write-OGLogEntry "OneDrive KFMState not set for [User: $($LoggedOnUser.USERNAME)][Mail:$($LoggedOnUser.Email)]"
         Write-OGLogEntry "Checking User Shell Paths [Path: $($UserShellPath)]"
         $UserShellPaths = Get-ItemProperty -Path "$($UserShellPath)" -ErrorAction SilentlyContinue
-        if ($UserShellPaths.Desktop -like "*OneDrive*"){
+        if ($UserShellPaths.Desktop -like "*OneDrive*") {
             Write-OGLogEntry "User's desktop Shell Path is pointing to OneDrive [Path: $($UserShellPaths.Desktop)]"
             Write-OGLogEntry "OneDrive KFMState considered enabled. Returning desktop path."
             $OneDriveDesktopPath = [PSCustomObject]@{
@@ -789,12 +785,12 @@ function Get-OGOneDriveKFMState {
             }
             return $OneDriveDesktopPath
         }
-        else{
+        else {
             Write-OGLogEntry "User's desktop Shell Path does not point to OneDrive [Path: $($UserShellPaths.Desktop)]"
             return $false
         }
     }
-    else{
+    else {
         Write-OGLogEntry "OneDrive path not found [User: $($LoggedOnUser.USERNAME)][Mail:$($LoggedOnUser.Email)][Path: $($UserOneDriveAcPath)"
         return $false
     }
@@ -838,10 +834,10 @@ Returns either Business or Persona accounts if found.
 #>
 function Get-OGOneDriveAccounts {
     param(
-        [parameter(Mandatory = $true, Position = 0,ValueFromPipeline)]
+        [parameter(Mandatory = $true, Position = 0, ValueFromPipeline)]
         [ValidateNotNullOrEmpty()]
         [PSCustomObject]$LoggedOnUser,
-        [parameter(Mandatory = $true, Position = 1,ValueFromPipeline)]
+        [parameter(Mandatory = $true, Position = 1, ValueFromPipeline)]
         [ValidateNotNullOrEmpty()]
         [validateset("Business", "Personal", "Both")]
         [PSCustomObject]$AccountType
@@ -850,26 +846,27 @@ function Get-OGOneDriveAccounts {
     $LoggedOnUser = $objLoggedOnUser
     Write-OGLogEntry "Getting OneDrive Accounts for [User: $($LoggedOnUser.USERNAME)]"
     $OneDriveAcPath = "Software\Microsoft\OneDrive\Accounts"
-    if(!(Get-PSDrive | Where-Object {$_.Name -eq "HKU"})){New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null}
+    if (!(Get-PSDrive | Where-Object { $_.Name -eq "HKU" })) { New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null }
     $UserOneDriveAcPath = "HKU:\$($LoggedOnUser.SID)\$($OneDriveAcPath)"
     $OneDriveRegAccounts = Get-ChildItem -Path "$($UserOneDriveAcPath)"
-    switch($AccountType){
-        "Business"{
-            $OneDriveBusinessPaths = $OneDriveRegAccounts  | Where-Object { ($_.PSIsContainer)-and($_.Name -like "*$($AccountType)*") } | Select-Object Name
+    switch ($AccountType) {
+        "Business" {
+            $OneDriveBusinessPaths = $OneDriveRegAccounts  | Where-Object { ($_.PSIsContainer) -and ($_.Name -like "*$($AccountType)*") } | Select-Object Name
         }
-        "Personal"{
-            $OneDriveBusinessPaths = $OneDriveRegAccounts  | Where-Object { ($_.PSIsContainer)-and($_.Name -like "*$($AccountType)*") } | Select-Object Name
+        "Personal" {
+            $OneDriveBusinessPaths = $OneDriveRegAccounts  | Where-Object { ($_.PSIsContainer) -and ($_.Name -like "*$($AccountType)*") } | Select-Object Name
         }
-        "Both"{
-            $OneDriveBusinessPaths = $OneDriveRegAccounts  | Where-Object { ($_.PSIsContainer)-and(($_.Name -like "*Personal*")-or($_.Name -like "*Business*"))} | Select-Object Name
+        "Both" {
+            $OneDriveBusinessPaths = $OneDriveRegAccounts  | Where-Object { ($_.PSIsContainer) -and (($_.Name -like "*Personal*") -or ($_.Name -like "*Business*")) } | Select-Object Name
         }
     }
-    if (($OneDriveBusinessPaths|Measure-Object).Count -gt 0){
+    if (($OneDriveBusinessPaths | Measure-Object).Count -gt 0) {
         Write-OGLogEntry "Found OneDrive Business Key [User: $($LoggedOnUser.USERNAME)]"
-        foreach ($path in $OneDriveBusinessPaths) { # }
+        foreach ($path in $OneDriveBusinessPaths) {
+            # }
             $OneDriveAc = $null
             $OneDriveAc = Get-OGRegistryKey -RegKey "$(($path.Name).Replace('HKEY_USERS','HKU:'))"
-            if ((Test-Path -Path "$($OneDriveAc.UserFolder)" -PathType Container)-and($OneDriveAc.UserEmail)){
+            if ((Test-Path -Path "$($OneDriveAc.UserFolder)" -PathType Container) -and ($OneDriveAc.UserEmail)) {
                 Write-OGLogEntry "Found Business Account [Name: $($OneDriveAc.DisplayName)] [Path: $($OneDriveAc.UserFolder)]"
                 $OneDriveAccounts += $OneDriveAc
                 # foreach($p in $OneDriveKFMState.PSObject.Properties){ 
@@ -878,11 +875,11 @@ function Get-OGOneDriveAccounts {
                 #     }
                 # }
             }
-            else{
+            else {
                 Write-OGLogEntry "OneDrive Account Path invalid [Path: $($OneDriveAc.UserFolder)]" -logtype Warning
             }
         }
-        if (($OneDriveAccounts|Measure-Object).Count -gt 0){
+        if (($OneDriveAccounts | Measure-Object).Count -gt 0) {
             return $OneDriveAccounts
         }
 
@@ -935,16 +932,17 @@ function New-OGLocalAdmin {
         [Parameter(Mandatory = $false)]
         [string]$Description = "Temp Local Admin"
     )
-    try{
+    try {
         $sPass = ConvertTo-SecureString -String $PT_Pass -AsPlainText -Force
         New-LocalUser "$Account_Name" -Password $sPass -FullName "$Account_Name" -Description $Description -AccountNeverExpires -PasswordNeverExpires
         Add-LocalGroupMember -Group "Administrators" -Member "$Account_Name"
     }
-    catch{
+    catch {
         Write-OGLogEntry "Failed creating local admin. Error: $_"
         return $false
     }
 }
+
 
 ##################################################################################################################################
 # End Current User Region
@@ -961,6 +959,6 @@ $Export = @(
     "Get-OGOneDriveAccounts"
 )
 
-foreach ($module in $Export){
+foreach ($module in $Export) {
     Export-ModuleMember $module
 }

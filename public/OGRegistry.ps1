@@ -464,6 +464,70 @@ Function Remove-OGRegistryKeyItem {
     }
 }
 
+<#
+.SYNOPSIS
+Maps HKEY_USERS registry to HKU PS Drive
+
+.DESCRIPTION
+Maps HKEY_USERS registry to HKU PS Drive
+
+.PARAMETER Mode
+To map or unmap drive. That is the question...
+
+.EXAMPLE
+Set-OGHKUDrive -Mode Map
+Maps the HKEY_USERS registry to HKU PS Drive
+
+.EXAMPLE
+Set-OGHKUDrive -Mode Unmap
+Unmaps the HKEY_USERS registry to HKU PS Drive if found.
+
+.NOTES
+    Name:       Set-OGHKUDrive       
+	Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-04-25
+    Updated:    -
+#>
+function Set-OGHKUDrive {
+    param (
+        [parameter(Mandatory = $true, Position = 0)]
+        [ValidateNotNullOrEmpty()]
+        [validateset("Map", "Unmap")]
+        [PSCustomObject]$Mode
+    )
+    switch ($mode) {
+        "Map" {
+            if (!(Get-PSDrive | Where-Object { $_.Name -eq "HKU" })) {
+                Write-OGLogEntry "Attempting to map HKEY_USERS registry drive to HKU:"
+                try{
+                    New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null
+                    Write-OGLogEntry "Success mapping HKEY_USERS registry drive to HKU:"
+                }
+                catch{
+                    Write-OGLogEntry "Failed mapping HKEY_USERS registry drive to HKU: Error: $_" -logtype Error
+                }
+                
+            }
+        }
+        "Unmap" {
+            if (Get-PSDrive | Where-Object { $_.Name -eq "HKU" }) {
+                Write-OGLogEntry "Attempting to remove mapping of HKEY_USERS registry drive to HKU:"
+                try{
+                    Remove-PSDrive -Name HKU -Force | Out-Null
+                    Write-OGLogEntry "Success removing mapping of HKEY_USERS registry drive to HKU: Error: $_" -logtype Error
+                }
+                catch{
+                    Write-OGLogEntry "Failed removing mapping of HKEY_USERS registry drive to HKU: Error: $_" -logtype Error
+                }
+                
+            }
+        }
+    }
+}
+
 ##################################################################################################################################
 # End Get Registry Region
 ##################################################################################################################################
