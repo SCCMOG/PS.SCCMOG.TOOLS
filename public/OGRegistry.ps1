@@ -540,7 +540,8 @@ $Export = @(
     "Get-OGRegistryKey",
     "Test-OGRegistryKeyItem",
     "New-OGRegistryKeyItem",
-    "Remove-OGRegistryKeyItem"
+    "Remove-OGRegistryKeyItem",
+    "Set-OGHKUDrive"
 )
 
 foreach ($module in $Export){
