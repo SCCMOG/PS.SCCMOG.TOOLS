@@ -861,19 +861,13 @@ function Get-OGOneDriveAccounts {
         }
     }
     if (($OneDriveBusinessPaths | Measure-Object).Count -gt 0) {
-        Write-OGLogEntry "Found OneDrive Business Key [User: $($LoggedOnUser.USERNAME)]"
+        Write-OGLogEntry "Found OneDrive Account Keys [User: $($LoggedOnUser.USERNAME)]"
         foreach ($path in $OneDriveBusinessPaths) {
-            # }
             $OneDriveAc = $null
             $OneDriveAc = Get-OGRegistryKey -RegKey "$(($path.Name).Replace('HKEY_USERS','HKU:'))"
             if ((Test-Path -Path "$($OneDriveAc.UserFolder)" -PathType Container) -and ($OneDriveAc.UserEmail)) {
                 Write-OGLogEntry "Found Business Account [Name: $($OneDriveAc.DisplayName)] [Path: $($OneDriveAc.UserFolder)]"
                 $OneDriveAccounts += $OneDriveAc
-                # foreach($p in $OneDriveKFMState.PSObject.Properties){ 
-                #     if ($p.Value -like "$($LoggedOnUser.USERPROFILE)*"){
-                #         return $OneDriveKFMState
-                #     }
-                # }
             }
             else {
                 Write-OGLogEntry "OneDrive Account Path invalid [Path: $($OneDriveAc.UserFolder)]" -logtype Warning

@@ -496,9 +496,9 @@ function Set-OGHKUDrive {
         [parameter(Mandatory = $true, Position = 0)]
         [ValidateNotNullOrEmpty()]
         [validateset("Map", "Unmap")]
-        [PSCustomObject]$Mode
+        [string]$Mode
     )
-    switch ($mode) {
+    switch ($Mode) {
         "Map" {
             if (!(Get-PSDrive | Where-Object { $_.Name -eq "HKU" })) {
                 Write-OGLogEntry "Attempting to map HKEY_USERS registry drive to HKU:"
