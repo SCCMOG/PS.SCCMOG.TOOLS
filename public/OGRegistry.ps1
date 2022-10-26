@@ -54,6 +54,7 @@
 
     Version history:
     1.0.0 - 2021-08-17 Function created
+    1.1.0 - 2022-10-26 Added Architecture
 #>
 function Get-OGProductUninstallKey {
     [cmdletbinding()]            
@@ -118,6 +119,7 @@ function Get-OGProductUninstallKey {
                         Publisher       = $key.GetValue("Publisher");
                         UninstallString = $key.GetValue("UninstallString");
                         InstallLocation = $key.GetValue("InstallLocation");
+                        Architecture    = if ($PSDriveKeyPath -like "*WOW6432Node*"){"x86"}else{"x64"}
                     }
                     $RetrievedProducts.Add($MatchProduct)
                 }
@@ -546,7 +548,8 @@ $Export = @(
     "Test-OGRegistryKeyItem",
     "New-OGRegistryKeyItem",
     "Remove-OGRegistryKeyItem",
-    "Set-OGHKUDrive"
+    "Set-OGHKUDrive",
+    "Get-OGProductUninstallKey"
 )
 
 foreach ($module in $Export){
