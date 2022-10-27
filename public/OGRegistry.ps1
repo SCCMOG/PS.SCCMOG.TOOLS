@@ -13,6 +13,142 @@
 
 <#
 .SYNOPSIS
+Write System reg file to registry.
+
+.DESCRIPTION
+Write System reg file to registry.
+
+.PARAMETER RegFile
+Full path (variables allowed) to .reg file
+
+.EXAMPLE
+An example
+
+.NOTES
+    Name:       Write-OGSysRegFile 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-10-27
+    Updated:    -
+
+#>
+function Write-OGSysRegFile {
+    PARAM(
+        [parameter(Mandatory = $true)]
+        [ValidateScript({
+            if( -Not ($_ | Test-Path) ){
+                throw "File or folder does not exist"
+            }
+            return $true
+        })]
+        [System.IO.FileInfo]$RegFile
+    )
+    Write-OGLogEntry "Writing to system registry from file [Path: $($RegFile)]"
+    try { 
+        $p = Start-Process -FilePath "$($env:windir)\regedit.exe" -ArgumentList "/s `"$RegFile`"" -PassThru -Wait -NoNewWindow
+        if($p.ExitCode -eq 0) {
+            Write-OGLogEntry "Success writing regfile [Path: $($RegFile)]"
+            Return $true
+        } else {
+            Write-OGLogEntry "Failed writing regfile [Path: $($RegFile)]. Exiting Function!"
+            Return $False
+        }
+    } 
+    catch [System.Exception]{ 
+        Write-OGLogEntry "Failed writing regfile [Path: $($RegFile)]. Exiting Function! Error: $($_.Exception.Message)"
+        Return $False
+    }
+}
+
+<#
+.SYNOPSIS
+Writes .reg file to current user.
+
+.DESCRIPTION
+Writes .reg file to current user.
+
+.PARAMETER RegFileContents
+Array of regfile. User Get-Content -
+
+.EXAMPLE
+An example
+
+.NOTES
+    Name:       Write-OGUserRegFile 
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-10-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2022-10-27 Function created
+
+            Write-OGLogEntry "Getting reg file contents [RegFile: $($HKCU_REM_TemplateReg)]"
+            try {
+                $registryData = Get-Content -Path $HKCU_REM_TemplateReg -ReadCount 0 -ErrorAction Stop
+                if($registryData) {
+                    Write-OGLogEntry "Replacing registry template content. HKEY_CURRENT_USER --> HKEY_USERS\$($loggedOnUser.SID)"
+                    $RegFileContents = $registryData -replace 'HKEY_CURRENT_USER', "HKEY_USERS\$($loggedOnUser.SID)"
+                    Write-OGLogEntry "Success registry template content now replaced."
+                }
+            }
+            catch [System.Exception] {
+                Write-OGLogEntry "Failed . Error message: $($_.Exception.Message)"
+                $ExitCodes
+                Exit 12
+            }
+
+#>
+function Write-OGUserRegFile {
+    PARAM(
+        [parameter(Mandatory = $true)]
+        [array]$RegFileContents
+    )
+    Write-OGLogEntry "Creating temp file."
+    try{
+        $tempFile = '{0}{1:yyyyMMddHHmmssff}.reg' -f [IO.Path]::GetTempPath(), (Get-Date)
+        Write-OGLogEntry "Temp file created [Path: $($tempFile)]"
+        $RegFileContents | Out-File -FilePath $tempFile
+    }
+    catch{
+        Write-OGLogEntry "Failed to create Temp file. Exiting Function!" -logtype Error
+        Return $False
+    }
+    Write-OGLogEntry "Writing content to temp file."
+    try{
+        $RegFileContents | Out-File -FilePath $tempFile
+        Write-OGLogEntry "Temp file content written [Path: $($tempFile)]"
+    }
+    catch{
+        Write-OGLogEntry "Failed to write Temp file content. Exiting Function!"
+        Return $False
+    }
+    Write-OGLogEntry "Writing registry from file [Path: $($tempFile)]"
+    try { 
+        $p = Start-Process -FilePath "$($env:windir)\regedit.exe" -ArgumentList "/s `"$tempFile`"" -PassThru -Wait -NoNewWindow
+        if($p.ExitCode -eq 0) {
+            Write-OGLogEntry "Success writing regfile [Path: $($tempFile)]"
+            Write-OGLogEntry "Removing Temp file [Path: $($tempFile)]"
+            Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
+            Return $true
+        } else {
+            Write-OGLogEntry "Failed writing regfile [Path: $($tempFile)]. Exiting Function!"
+            Return $False
+        }
+    } 
+    catch [System.Exception]{ 
+        Write-OGLogEntry "Failed writing regfile [Path: $($tempFile)]. Exiting Function! Error: $($_.Exception.Message)"
+        Return $False
+    }
+    
+}
+
+<#
+.SYNOPSIS
     Search a machines x6 and x86 Uninstall registry key for a specific Application (Appwiz.cpl) Name
 
 .DESCRIPTION
@@ -549,7 +685,9 @@ $Export = @(
     "New-OGRegistryKeyItem",
     "Remove-OGRegistryKeyItem",
     "Set-OGHKUDrive",
-    "Get-OGProductUninstallKey"
+    "Get-OGProductUninstallKey",
+    "Write-OGUserRegFile",
+    "Write-OGSysRegFile"
 )
 
 foreach ($module in $Export){
