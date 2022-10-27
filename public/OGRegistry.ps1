@@ -45,19 +45,19 @@ function Write-OGRegFile {
         })]
         [System.IO.FileInfo]$RegFile
     )
-    Write-OGLogEntry "Writing to system registry from file [Path: $($RegFile)]"
+    Write-OGLogEntry "Writing reg file registry [Path: $($RegFile)]"
     try { 
         $p = Start-Process -FilePath "$($env:windir)\regedit.exe" -ArgumentList "/s `"$RegFile`"" -PassThru -Wait -NoNewWindow
         if($p.ExitCode -eq 0) {
-            Write-OGLogEntry "Success writing regfile [Path: $($RegFile)]"
+            Write-OGLogEntry "Success writing reg file [Path: $($RegFile)]"
             Return $true
         } else {
-            Write-OGLogEntry "Failed writing regfile [Path: $($RegFile)]. Exiting Function!"
+            Write-OGLogEntry "Failed writing reg file [Path: $($RegFile)]. Exiting Function!"
             Return $False
         }
     } 
     catch [System.Exception]{ 
-        Write-OGLogEntry "Failed writing regfile [Path: $($RegFile)]. Exiting Function! Error: $($_.Exception.Message)"
+        Write-OGLogEntry "Failed writing reg file [Path: $($RegFile)]. Exiting Function! Error: $($_.Exception.Message)"
         Return $False
     }
 }
@@ -73,11 +73,11 @@ Writes .reg file contents to registry.
 Array content of regfile. Use Get-Content with -ReadCount 0 switch.
 
 .EXAMPLE
-$RegFileContents = Get-Content -Path  "C:\path\to\your.reg" -ReadCount 0
-Write-OGRegFile -RegFileContent $RegFileContents
+$RegFileContent = Get-Content -Path  "C:\path\to\your.reg" -ReadCount 0
+Write-OGRegFileContent -RegFileContent $RegFileContent
 
 .NOTES
-    Name:       Write-OGRegFile 
+    Name:       Write-OGRegFileContent 
     Author:     Richie Schuster - SCCMOG.com
     GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
@@ -89,7 +89,7 @@ Write-OGRegFile -RegFileContent $RegFileContents
     1.0.0 - 2022-10-27 Function created
 
 #>
-function Write-OGRegFile {
+function Write-OGRegFileContent {
     PARAM(
         [parameter(Mandatory = $true)]
         [array]$RegFileContent
@@ -98,7 +98,7 @@ function Write-OGRegFile {
     try{
         $tempFile = '{0}{1:yyyyMMddHHmmssff}.reg' -f [IO.Path]::GetTempPath(), (Get-Date)
         Write-OGLogEntry "Temp file created [Path: $($tempFile)]"
-        $RegFileContents | Out-File -FilePath $tempFile
+        $RegFileContent | Out-File -FilePath $tempFile
     }
     catch{
         Write-OGLogEntry "Failed to create Temp file. Exiting Function!" -logtype Error
@@ -106,7 +106,7 @@ function Write-OGRegFile {
     }
     Write-OGLogEntry "Writing content to temp file."
     try{
-        $RegFileContents | Out-File -FilePath $tempFile
+        $RegFileContent | Out-File -FilePath $tempFile
         Write-OGLogEntry "Temp file content written [Path: $($tempFile)]"
     }
     catch{
@@ -135,10 +135,10 @@ function Write-OGRegFile {
 
 <#
 .SYNOPSIS
-    Search a machines x6 and x86 Uninstall registry key for a specific Application (Appwiz.cpl) Name
+    Search a machines x64 and x86 Uninstall registry key for a specific Application (Appwiz.cpl) Name
 
 .DESCRIPTION
-    Search a machines x6 and x86 Uninstall registry key for a specific Application (Appwiz.cpl) Name
+    Search a machines x64 and x86 Uninstall registry key for a specific Application (Appwiz.cpl) Name
 
 .PARAMETER ProductNames
     Application name(s)
@@ -672,7 +672,8 @@ $Export = @(
     "Remove-OGRegistryKeyItem",
     "Set-OGHKUDrive",
     "Get-OGProductUninstallKey",
-    "Write-OGRegFile"
+    "Write-OGRegFile",
+    "Write-OGRegFileContent"
 )
 
 foreach ($module in $Export){
