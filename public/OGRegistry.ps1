@@ -13,19 +13,19 @@
 
 <#
 .SYNOPSIS
-Write System reg file to registry.
+Write reg file to registry.
 
 .DESCRIPTION
-Write System reg file to registry.
+Write reg file to registry.
 
 .PARAMETER RegFile
 Full path (variables allowed) to .reg file
 
 .EXAMPLE
-An example
+Write-OGRegFile -RegFile "C:\path\to\your.reg"
 
 .NOTES
-    Name:       Write-OGSysRegFile 
+    Name:       Write-OGRegFile 
     Author:     Richie Schuster - SCCMOG.com
     GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
@@ -34,7 +34,7 @@ An example
     Updated:    -
 
 #>
-function Write-OGSysRegFile {
+function Write-OGRegFile {
     PARAM(
         [parameter(Mandatory = $true)]
         [ValidateScript({
@@ -64,19 +64,20 @@ function Write-OGSysRegFile {
 
 <#
 .SYNOPSIS
-Writes .reg file to current user.
+Writes .reg file contents to registry.
 
 .DESCRIPTION
-Writes .reg file to current user.
+Writes .reg file contents to registry.
 
-.PARAMETER RegFileContents
-Array of regfile. User Get-Content -
+.PARAMETER RegFileContent
+Array content of regfile. Use Get-Content with -ReadCount 0 switch.
 
 .EXAMPLE
-An example
+$RegFileContents = Get-Content -Path  "C:\path\to\your.reg" -ReadCount 0
+Write-OGRegFile -RegFileContent $RegFileContents
 
 .NOTES
-    Name:       Write-OGUserRegFile 
+    Name:       Write-OGRegFile 
     Author:     Richie Schuster - SCCMOG.com
     GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
     Website:    https://www.sccmog.com
@@ -87,26 +88,11 @@ An example
     Version history:
     1.0.0 - 2022-10-27 Function created
 
-            Write-OGLogEntry "Getting reg file contents [RegFile: $($HKCU_REM_TemplateReg)]"
-            try {
-                $registryData = Get-Content -Path $HKCU_REM_TemplateReg -ReadCount 0 -ErrorAction Stop
-                if($registryData) {
-                    Write-OGLogEntry "Replacing registry template content. HKEY_CURRENT_USER --> HKEY_USERS\$($loggedOnUser.SID)"
-                    $RegFileContents = $registryData -replace 'HKEY_CURRENT_USER', "HKEY_USERS\$($loggedOnUser.SID)"
-                    Write-OGLogEntry "Success registry template content now replaced."
-                }
-            }
-            catch [System.Exception] {
-                Write-OGLogEntry "Failed . Error message: $($_.Exception.Message)"
-                $ExitCodes
-                Exit 12
-            }
-
 #>
-function Write-OGUserRegFile {
+function Write-OGRegFile {
     PARAM(
         [parameter(Mandatory = $true)]
-        [array]$RegFileContents
+        [array]$RegFileContent
     )
     Write-OGLogEntry "Creating temp file."
     try{
@@ -686,8 +672,7 @@ $Export = @(
     "Remove-OGRegistryKeyItem",
     "Set-OGHKUDrive",
     "Get-OGProductUninstallKey",
-    "Write-OGUserRegFile",
-    "Write-OGSysRegFile"
+    "Write-OGRegFile"
 )
 
 foreach ($module in $Export){
