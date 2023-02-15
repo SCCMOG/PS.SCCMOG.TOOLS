@@ -82,7 +82,7 @@ Function Get-OGRecursiveAADGroupMemberUsers{
 
 <#
 .SYNOPSIS
-Downlaod the sysinternals Handle Application
+Download the sysinternals Handle Application
 
 .DESCRIPTION
 Download the sysinternals Handle Application from https://download.sysinternals.com/files/Handle.zip
