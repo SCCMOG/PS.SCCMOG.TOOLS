@@ -868,7 +868,7 @@ function Invoke-OGKillProcess {
                 $StoppedIdS += $CimProc.ProcessId
             }
             else {
-                #Write-OGLogEntry "Process($ProcId) already stopped"
+                Write-OGLogEntry "Process [process: $ProcId] already stopped"
             }
         }
 
@@ -2585,6 +2585,290 @@ function Export-OGEdgeBookmarksHTML {
     }
 }
 
+
+<#
+.SYNOPSIS
+Exports specified users Chrome Bookmarks to HTML File.
+
+.DESCRIPTION
+Exports specified users Chrome Bookmarks to HTML File.
+
+.PARAMETER USER_SID
+User SID for for export
+
+.PARAMETER ExportRoot
+If wanting to export as an HTML file, folder that the file should be created in.
+
+.EXAMPLE
+Export-OGChromeBookmarksHTML.ps1 -USER_SID "S-1-5-21-1291184173-2927567776-2264912970-1001" -ExportRoot "c:\admin"
+Exports all profiles bookmarks for the supplied user SID.
+
+.NOTES
+    Name:       Export-OGChromeBookmarksHTML.ps1
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2023-04-06
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2023-04-06 Function created
+#>
+Function Export-OGChromeBookmarksHTML {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$USER_SID,
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ExportRoot
+    )
+    if (!(Test-OGContainerPath -Path $ExportRoot)) {
+        $eM = "Destination-Path $ExportRoot does not exist!"
+        Write-OGLogEntry $eM -logtype Error
+        break
+    }
+
+    #Set user Registry Paths
+    $regProfilesPath = "HKU:\$($USER_SID)\Software\Google\Chrome\PreferenceMACs"
+    $User_Shell_reg = "HKU:\$($USER_SID)\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders"
+    $arrayCurrentProfiles = @()
+
+    #Mouth HKEY_USERS Regkey
+    if (!(Get-PSDrive | Where-Object { $_.Name -eq "HKU" })) { New-PSDrive -PSProvider Registry -Name HKU -Root HKEY_USERS | Out-Null }
+
+    #Get Profiles
+    if (Test-OGRegistryKey -RegKey $regProfilesPath) {
+        $regProfiles = Get-ChildItem -Path "$($regProfilesPath)" | Where-Object { ($_.PSIsContainer) -and ($_.PSChildName -notlike "System Profile") }
+        $UserLocalAppData = (Get-ItemProperty -Path $User_Shell_reg).'Local AppData'
+        $chromeTempProfilePath = "$($UserLocalAppData)\Google\Chrome\User Data"
+        if (($regProfiles | Measure-Object).Count -gt 0) {
+            $ExportedTime = Get-Date -Format 'yyyy-MM-dd_HH.mm'
+            foreach ($profile in $regProfiles) {
+                #pause}
+                $profilePath = $null
+                $objProfile = $null
+                $profilePath = $(($profile.Name).Replace('HKEY_USERS', 'HKU:'))
+                $bookMarksFile = "$($chromeTempProfilePath)\$($profile.PSChildName)\BookMarks"
+                Write-OGLogEntry "Checking for Chrome Bookmark for Profile . [Profile Name: $($profile.PSChildName)] [Path: $($bookMarksFile))]"
+                if (Test-OGFilePath "$($bookMarksFile)") {
+                    $bookmarksFound = $true
+                }
+                else {
+                    Write-OGLogEntry "No Profile path found for profile [Profile: $($profile.PSChildName)] [ShortcutName: $($profile.ShortcutName)] [ShortcutName: $($profile.ShortcutName)]"
+                    $bookmarksFound = $false
+                }
+                If ($bookmarksFound) {
+                    $TempFilePath = $null
+                    $TempFilePath = Get-OGTempStorage -File
+                    $ExportFile = $null
+                    $ExportFile = "$($ExportRoot)\Chrome-Bookmarks_$($profile.PSChildName)_bk_$($ExportedTime).html"
+                    $objProfile = [PSCustomObject]@{
+                        Name       = $profile.PSChildName
+                        Path       = "$($chromeTempProfilePath)\$($profile.PSChildName)"
+                        Bookmarks  = "$($bookMarksFile)"
+                        RegPath    = "$($profilePath)"
+                        TempFile   = "$($TempFilePath)"
+                        ExportFile = "$($ExportFile)"
+                    }
+                    $arrayCurrentProfiles += $objProfile
+                }
+            }
+        }
+        else {
+            $eM = "User has no Google Chrome profiles. [SID: $($USER_SID)]"
+            Write-OGLogEntry $eM -logtype Warning
+            break
+        }
+    }
+    else {
+        $eM = "User has no Google Chrome profiles. [SID: $($USER_SID)]"
+        Write-OGLogEntry $eM -logtype Warning
+        break
+    }
+
+
+    # ---- HTML Header ----
+    $BookmarksHTML_Header = @'
+<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!-- This is an automatically generated file.
+ It will be read and overwritten.
+ DO NOT EDIT! -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Bookmarks</TITLE>
+<H1>Bookmarks</H1>
+<DL><p>
+'@
+
+    #Loop through....
+    foreach ($chromeProfile in $arrayCurrentProfiles) {
+        #$chromeProfile
+        #pause}
+
+        $BookmarksHTML_Header | Out-File -FilePath $chromeProfile.TempFile -Force -Encoding utf8
+
+        # ---- Enumerate Bookmarks Folders ----
+        Function Get-BookmarkFolder {
+            [cmdletbinding()] 
+            Param( 
+                [Parameter(Position = 0, ValueFromPipeline = $True)]
+                $Node 
+            )  
+            if ($node.name -like "Bookmarks bar") {
+                $DateAdded = [Decimal] $node.date_added | ConvertTo-OGUnixTimeStamp
+                $DateModified = [Decimal] $node.date_modified | ConvertTo-OGUnixTimeStamp
+                "        <DT><H3 ADD_DATE=`"$($DateAdded)`" LAST_MODIFIED=`"$($DateModified)`" PERSONAL_TOOLBAR_FOLDER=`"true`">$($node.name )</H3>" | Out-File -FilePath $chromeProfile.TempFile -Append -Force -Encoding utf8
+                "        <DL><p>" | Out-File -FilePath $chromeProfile.TempFile -Append -Force -Encoding utf8
+            }
+            foreach ($child in $node.children) {
+                $DateAdded = [Decimal] $child.date_added | ConvertTo-OGUnixTimeStamp    
+                $DateModified = [Decimal] $child.date_modified | ConvertTo-OGUnixTimeStamp
+                if ($child.type -eq 'folder') {
+                    "        <DT><H3 ADD_DATE=`"$($DateAdded)`" LAST_MODIFIED=`"$($DateModified)`">$($child.name)</H3>" | Out-File -FilePath $chromeProfile.TempFile -Append -Force -Encoding utf8
+                    "        <DL><p>" | Out-File -FilePath $chromeProfile.TempFile -Append -Force -Encoding utf8
+                    Get-BookmarkFolder $child # Recursive call in case of Folders / SubFolders
+                    "        </DL><p>" | Out-File -FilePath $chromeProfile.TempFile -Append -Force -Encoding utf8
+                }
+                else {
+                    # Type not Folder => URL
+                    "        <DT><A HREF=`"$($child.url)`" ADD_DATE=`"$($DateAdded)`">$($child.name)</A>" | Out-File -FilePath $chromeProfile.TempFile -Append -Encoding utf8
+                }
+            }
+            if ($node.name -like "Bookmarks bar") {
+                "        </DL><p>" | Out-File -FilePath $chromeProfile.TempFile -Append -Force -Encoding utf8
+            }
+        }
+
+        # ---- Convert the JSON Contens (recursive) ----
+        $data = Get-content $chromeProfile.Bookmarks -Encoding UTF8 | Out-String | ConvertFrom-Json
+        $sections = $data.roots.PSObject.Properties | Select-Object -ExpandProperty name
+        ForEach ($entry in $sections) { 
+            #pause}
+            $data.roots.$entry | Get-BookmarkFolder
+        }
+        # ---- HTML Footer ----
+        '</DL><p>' | Out-File -FilePath $chromeProfile.TempFile -Append -Force -Encoding utf8
+        $HTML_Data = Get-Content $chromeProfile.TempFile
+        try {
+            Write-OGLogEntry "Exporting Bookmarks file [Destination: $($chromeProfile.ExportFile)]"
+            Move-Item -Path $chromeProfile.TempFile -Destination $chromeProfile.ExportFile -Force
+            Write-OGLogEntry "Success exporting Bookmarks file [Destination: $($chromeProfile.ExportFile)]"
+        }
+        catch {
+            $eM = "Failed exporting Bookmarks file [Destination: $($chromeProfile.ExportFile)]. Error: $_"
+            Write-OGLogEntry $eM -logtype Error
+        }
+    }
+}
+
+
+<#
+.SYNOPSIS
+Exports specified users Firefox Bookmarks Database File.
+
+.DESCRIPTION
+Exports specified users Firefox Bookmarks Database File.
+
+.PARAMETER USER_APPDATA_ROAMING
+User's AppData roaming %APPDATA% $ENV:APPDATA
+
+.PARAMETER ExportRoot
+Location to export the Database file
+
+.EXAMPLE
+Export-OGFireFoxBookmarksDB.ps1 -USER_APPDATA_ROAMING $ENV:APPDATA -ExportRoot "c:\admin"
+Exports all bookmark database files for the supplied user SID.
+
+.NOTES
+    Name:       Export-OGFireFoxBookmarksDB.ps1
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2023-04-06
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2023-04-06 Function created
+#>
+Function Export-OGFireFoxBookmarksDB {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$USER_APPDATA_ROAMING,
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$ExportRoot
+    )
+    if (!(Test-OGContainerPath -Path $ExportRoot)) {
+        $eM = "Destination-Path $ExportRoot does not exist!"
+        Write-OGLogEntry $eM -logtype Error
+        break
+    }
+
+    #Variables
+    $firefoxProfilesPath = ("[replace]\Mozilla\Firefox\Profiles").Replace("[replace]","$($USER_APPDATA_ROAMING)")
+    $arrayCurrentProfiles = @()
+
+    #Get Profiles
+    if (Test-OGContainerPath -Path $firefoxProfilesPath) {
+        $Profiles = Get-ChildItem -Path "$($firefoxProfilesPath)" | Where-Object { ($_.PSIsContainer) }
+        if (($Profiles | Measure-Object).Count -gt 0) {
+            $ExportedTime = Get-Date -Format 'yyyy-MM-dd_HH.mm'
+            foreach ($profile in $Profiles) {
+                #pause}
+                $profilePath = $null
+                $objProfile = $null
+                $bookMarksFile = "$($profile.FullName)\places.sqlite"
+                Write-OGLogEntry "Checking for Firefox Bookmark database file. [Profile Name: $($profile.PSChildName)] [Path: $($bookMarksFile))]"
+                if (Test-OGFilePath "$($bookMarksFile)") {
+                    $bookmarksFound = $true
+                }
+                else {
+                    Write-OGLogEntry "No Firefox Bookmark database file found [Profile: $($profile.PSChildName)] [Path: $($bookMarksFile))]" -logtype Warning
+                    $bookmarksFound = $false
+                }
+                If ($bookmarksFound) {
+                    $ExportFile = $null
+                    $ExportFile = "$($ExportRoot)\FireFox-Bookmarks_$($profile.PSChildName)_$($ExportedTime).sqlite"
+                    $objProfile = [PSCustomObject]@{
+                        Name       = $profile.PSChildName
+                        Path       = "$($profile.FullName)"
+                        Bookmarks  = "$($bookMarksFile)"
+                        ExportFile = "$($ExportFile)"
+                    }
+                    $arrayCurrentProfiles += $objProfile
+                }
+            }
+        }
+        else {
+            $eM = "User has no FireFox profiles. [Profile Path: $($firefoxProfilesPath)]"
+            Write-OGLogEntry $eM -logtype Warning
+            break
+        }
+    }
+    else {
+        $eM = "User has no FireFox profiles. [Profile Path: $($firefoxProfilesPath)]"
+        Write-OGLogEntry $eM -logtype Warning
+        break
+    }
+
+    #Loop through....
+    foreach ($firefoxProfile in $arrayCurrentProfiles) {
+        #pause}
+        try {
+            Write-OGLogEntry "Exporting Bookmarks file [Destination: $($firefoxProfile.ExportFile)]"
+            Copy-Item -Path $firefoxProfile.Bookmarks -Destination $firefoxProfile.ExportFile -Force
+            Write-OGLogEntry "Success exporting Bookmarks file [Destination: $($firefoxProfile.ExportFile)]"
+        }
+        catch {
+            $eM = "Failed exporting Bookmarks file [Destination: $($firefoxProfile.ExportFile)]. Error: $_"
+            Write-OGLogEntry $eM -logtype Error
+        }
+    }
+}
+
 ##################################################################################################################################
 # END Files/Folder Region
 ##################################################################################################################################
@@ -3222,7 +3506,9 @@ $Export = @(
     "Set-OGTaskREPermissions",
     "Set-OGReadUsers",
     "Invoke-OGKillProcess",
-    "Get-OGLockingProcess"
+    "Get-OGLockingProcess",
+    "Export-OGFireFoxBookmarksDB",
+    "Export-OGChromeBookmarksHTML"
 )
 
 foreach ($module in $Export){

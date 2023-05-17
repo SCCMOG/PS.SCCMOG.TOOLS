@@ -126,21 +126,28 @@ $DateAdded | ConvertTo-OGUnixTimeStamp
     Version history:
         1.0.0 - 2022-02-09 Function created
 #>
+
 function ConvertTo-OGUnixTimeStamp {
     param(
         [Parameter(Position = 0, ValueFromPipeline = $True)]
         $TimeStamp 
     )
-    # Reference-Timestamp needed to convert Timestamps of JSON (Milliseconds / Ticks since LDAP / NT epoch 01.01.1601 00:00:00 UTC) to Unix-Timestamp (Epoch)
-    $Date_LDAP_NT_EPOCH = Get-Date -Year 1601 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0
-    $date = [Decimal] $TimeStamp
-    if ($date -gt 0) { 
-        $date = $Date_LDAP_NT_EPOCH.AddTicks($date * 10)
-        $date = $date | Get-Date -UFormat %s 
-        $unixTimeStamp = [int][double]::Parse($date) - 1
-        return $unixTimeStamp
+    if ($TimeStamp -eq 0){
+        return 0
     }
-} 
+    else{
+        # Reference-Timestamp needed to convert Timestamps of JSON (Milliseconds / Ticks since LDAP / NT epoch 01.01.1601 00:00:00 UTC) to Unix-Timestamp (Epoch)
+        $Date_LDAP_NT_EPOCH = Get-Date -Year 1601 -Month 1 -Day 1 -Hour 0 -Minute 0 -Second 0
+        $date = [Decimal] $TimeStamp
+        if ($date -gt 0) { 
+            $date = $Date_LDAP_NT_EPOCH.AddTicks($date * 10)
+            $date = $date | Get-Date -UFormat %s 
+            $unixTimeStamp = [int][double]::Parse($date) - 1
+            return $unixTimeStamp
+        }
+    }
+    
+}
 
 
 <#

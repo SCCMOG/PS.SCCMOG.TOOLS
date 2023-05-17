@@ -1,6 +1,56 @@
 
 <#
 .SYNOPSIS
+    Gets a WMI namespace
+.DESCRIPTION
+    Gets a WMI namespace
+.EXAMPLE
+    PS C:\> Get-OGWMINameSpace -Name "SCCMOG" -VerboseOutput
+    Gets the namespace SCCMOG from ROOT
+.PARAMETER Name
+    Name of namespace to get from root
+
+.PARAMETER Machine
+    Machine to get namespace from. Default is local.
+
+.INPUTS
+    Inputs (if any)
+.OUTPUTS
+    Output (if any)
+.NOTES
+       Name:       Get-OGWMINameSpace
+       Author:     Richie Schuster - SCCMOG.com
+       Website:    https://www.sccmog.com
+       Contact:    @RichieJSY
+       Created:    2023-05-11
+       Updated:    -
+
+       Version history:
+            1.0.0 - 2023-05-11 Function created
+#>
+function Get-OGWMINameSpace {
+    [cmdletbinding()]
+    param(
+        [parameter(Mandatory = $true, HelpMessage = "The Namespace's name to be searched for from ROOT")]
+        [string]$Name,
+        [parameter(Mandatory = $false, HelpMessage = "The Machine to be searched. Default is local machine")]
+        [string]$Machine = "."
+    )
+    Write-OGLogEntry "Checking for Namespace in ROOT [Namespace: $($Name)]"
+    $WmiNamespace = Get-WmiObject -query "Select * From __Namespace Where Name='$($Name)'" -Namespace "root" -ComputerName "$($Machine)"
+    if ($WmiNamespace) {
+        Write-OGLogEntry -logText "Found WMI Name: $($Name)"
+        return $WmiNamespace
+    }
+    Else {
+        Write-OGLogEntry -logText "NO WMI Namespace found with name: $($Name)" -logtype Warning
+        return $false
+    }
+}
+
+
+<#
+.SYNOPSIS
     Creates a New WMI Namespace
 .DESCRIPTION
     This function checks for and if not found creates a new WMI namespace.
@@ -36,20 +86,25 @@ function New-OGWMINameSpace {
         [string]$Machine = "."
     )
     #Check for Namespace
-    try{
-        [wmiclass]"\\$($Machine)\root\$($Name)" | Out-Null
-        Write-OGLogEntry "Failed - WMI Namespace found with name: $($Name)" -logtype Error
-        throw "Failed - WMI Namespace found with name: $($Name)"
+    if (!(Get-OGWMINameSpace -Name $Name -Machine $Machine)){
+        try {
+            Write-OGLogEntry "Creating Namespace [Name: $($Name)][]Machine: $($Machine)]"
+            $ns=[wmiclass]"\\$($Machine)\root:__namespace"
+            $CLVNamepace = $ns.CreateInstance()
+            $CLVNamepace.Name = "$($Name)"
+            $CLVNamepace.Put() | Out-Null
+            $objNewNameSpace = [wmiclass]"\\$($Machine)\root\$($Name)"
+            Write-OGLogEntry "Success - created WMI Namespace with name: $($Name)"
+            return $objNewNameSpace
+        }
+        catch [System.Exception] {
+            Write-OGLogEntry "Failed Creating WMI Namespace. Error: $($_.Exception.Message)" -logtype Error
+            throw "Failed Creating WMI Namespace. Error: $($_.Exception.Message)"
+        }
     }
-    #Create the NameSpace
-    catch{ 
-        $ns=[wmiclass]"\\$($Machine)\root:__namespace"
-        $CLVNamepace = $ns.CreateInstance()
-        $CLVNamepace.Name = "$($Name)"
-        $CLVNamepace.Put() | Out-Null
-        $objNewNameSpace = [wmiclass]"\\$($Machine)\root\$($Name)"
-        Write-OGLogEntry "Success - created WMI Namespace with name: $($Name)"
-        return $objNewNameSpace
+    Else{
+        Write-OGLogEntry "Unable to create WMI Namespace as one with the name specified already exists." -logtype Error
+        return $false
     }
 }
 
@@ -382,11 +437,11 @@ function Get-OGWMIClass () {
     $MachineRoot = "\\$($Machine)\ROOT"
     try{
         $objClass=[wmiclass]"$($MachineRoot)\$($Class_NameSpace):$($Class_Name)"
-        Write-OGLogEntry -logText "Success class: '$($Class_Name)' exists in namespace: '$($MachineRoot)\ROOT\$($Class_NameSpace)'"
+        Write-OGLogEntry -logText "Success class: '$($Class_Name)' exists in namespace: '$($MachineRoot)\$($Class_NameSpace)'"
         return $objClass
     }
     catch{
-        Write-OGLogEntry -logText "Class: '$($Class_Name)' does NOT exist in namespace: '$($MachineRoot)\ROOT\$($Class_NameSpace)'" -logType Warning
+        Write-OGLogEntry -logText "Class: '$($Class_Name)' does NOT exist in namespace: '$($MachineRoot)\$($Class_NameSpace)'" -logType Warning
         return $false
     }
 }
@@ -448,16 +503,21 @@ function New-OGWMIInstance {
         [string]$Class_NameSpace,
         [parameter(Mandatory=$true, HelpMessage = "The Hashtable of the Instance data.")]
         [Hashtable]$Instance,
-        [parameter(Mandatory=$false, HelpMessage = "The Machine to delete the class from. Default is local machine")]
+        [parameter(Mandatory=$false, HelpMessage = "The Machine to create the instance on. Default is local machine")]
         [string]$Machine = "."
     )
     try{
         $Class = Get-OGWMIClass -Class_Name "$($Class_Name)" -Class_NameSpace "$($Class_NameSpace)" -Machine $Machine
-        if($machine -eq "."){$Machine=$env:COMPUTERNAME}
         if ($Class){
-            if($machine -eq "."){$Machine=$env:COMPUTERNAME}
-            $objInstance = New-CimInstance -ClassName "$($Class_Name)" -Namespace" root\$($Class_NameSpace)" -Property $Instance -ComputerName $Machine
-            Write-OGLogEntry "Success creating new instance: '$($Instance.ToString())' in class: '$($Class)' Machine: '$($Machine)'"
+            Write-OGLogEntry "Creating new instance in class: '$($Class)' Machine: '$($Machine)'"
+            if($machine -eq "."){
+                $objInstance = New-CimInstance -ClassName "$($Class_Name)" -Namespace "root\$($Class_NameSpace)" -Property $Instance -ErrorAction Stop
+            }
+            else{
+                $objInstance = New-CimInstance -ClassName "$($Class_Name)" -Namespace "root\$($Class_NameSpace)" -Property $Instance -ComputerName $Machine -ErrorAction Stop
+            }
+            Write-OGLogEntry "Success creating new instance: '$($objInstance)' in class: '$($Class)' Machine: '$($Machine)'"
+            #Write-OGLogEntry $objInstance
             return $objInstance
         }
         Else{
@@ -466,8 +526,8 @@ function New-OGWMIInstance {
             throw $message;
         }
     }
-    catch{
-        $message = "FAILED creating new instance: '$($Instance.ToString())' in class: '$($Class)' Machine: '$($Machine)'. Error message: $($_.Exception.Message)"
+    catch [System.Exception] {
+        $message = "FAILED creating new instance: '$($Class)' in class: '$($Class)' Machine: '$($Machine)'. Error message: $($_.Exception.Message)"
         Write-OGLogEntry $message -logtype Error
         throw $message;
     }
@@ -529,7 +589,8 @@ $Export = @(
     "New-OGWMIInstance",
     "New-OGWMINameSpace",
     "Remove-OGWMIClass",
-    "Remove-OGWMINameSpace"
+    "Remove-OGWMINameSpace",
+    "Get-OGWMINameSpace"
 )
 
 foreach ($module in $Export){
