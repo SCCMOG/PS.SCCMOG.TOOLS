@@ -533,6 +533,54 @@ function New-OGWMIInstance {
     }
 }
 
+<#
+.SYNOPSIS
+    Gets the Manufacturer from WMI Class Win32_ComputerSystem
+
+.DESCRIPTION
+    Gets the Manufacturer from WMI Class Win32_ComputerSystem
+    Dell, HP, Lenovo and MS
+
+.EXAMPLE
+    Get-OGManufacturer
+
+.NOTES
+    Name:       Get-OGManufacturer
+    Author:     Richie Schuster - SCCMOG.com
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2023-05-19
+    Updated:    -
+
+    Version history:
+        1.0.0 - 2023-05-19 Function created
+#>
+Function Get-OGManufacturer {
+    try {
+        Write-OGLogEntry "Getting Manufacturer from WMI [WMI Class: Win32_ComputerSystem]"
+        $objWMICS = Get-WmiObject -Class Win32_ComputerSystem
+        if ($objWMICS.Manufacturer -like "*Dell*") {
+            Write-OGLogEntry "[Manufacturer: Dell]"
+            return "Dell"
+        }
+        if (($objWMICS.Manufacturer -like "*HP*") -or ($objWMICS.Manufacturer -like "*Hewlett*")) {
+            Write-OGLogEntry "[Manufacturer: HP]"
+            return "HP"
+        }
+        if ($objWMICS.Manufacturer -like "*Lenovo*") {
+            Write-OGLogEntry "[Manufacturer: Lenovo]"
+            return "Lenovo"
+        }
+        if ($objWMICS.Manufacturer -like "*Microsoft*") {
+            Write-OGLogEntry "[Manufacturer: MS]"
+            return "MS"
+        }
+        return "NOTSUPPORTED"
+    }
+    catch [System.Exception] {
+        throw "Unable to query WMI Class Win32_ComputerSystem. Error: $($_.Exception.Message)"
+    }
+}
 
 #New-CimInstance -ClassName CLV_LocalAdmin -Namespace root\SCCMOG -Property $proplist
 
