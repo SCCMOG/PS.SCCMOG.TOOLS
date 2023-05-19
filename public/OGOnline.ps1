@@ -134,10 +134,200 @@ function Get-OGHandleApp{
     }
 }
 
+##
+<#
+.SYNOPSIS
+    Get Warranty data for a Dell machine
+
+.DESCRIPTION
+    Get Warranty data for a Dell machine and return it as a hash table
+
+.PARAMETER serialNumber
+    Serial number of machine
+
+.PARAMETER DellClientID
+    Dell client ID provided by Dell 
+
+.PARAMETER DellAPIKey
+    Dell API Key provided by Dell 
+
+.PARAMETER Client
+    Org Name - Default SCCMOG
+
+.EXAMPLE
+    Get-OGDellWarranty -serialNumber $serialNumber -DellClientID $dellClientID -DellAPIKey $dellAPIKey
+    Returns the warranty data for the serial number provided as a hash table
+
+.EXAMPLE
+    Get-OGDellWarranty -serialNumber $serialNumber -DellClientID $dellClientID -DellAPIKey $dellAPIKey -Client "YourOrgName"
+    Returns the warranty data for the serial number provided as a hash table and also adds your Organisation name.
+
+.NOTES
+    Name:       Get-OGDellWarranty
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-05-19
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2022-05-19 Function Created
+#>
+function Get-OGDellWarranty {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        $serialNumber, 
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        $DellClientID,
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        $DellAPIKey,
+        [Parameter(Mandatory = $false)]
+        $Client = "SCCMOG"
+    )
+    $vendor = "Dell"
+    $AuthURI = "https://apigtwb2c.us.dell.com/auth/oauth/v2/token"
+    $OAuth = "$DellClientID`:$DellAPIKey"
+    $dellAPIUri = "https://apigtwb2c.us.dell.com/PROD/sbil/eapi/v5/asset-entitlements"
+    try {      
+        $Bytes = [System.Text.Encoding]::ASCII.GetBytes($OAuth)
+        $EncodedOAuth = [Convert]::ToBase64String($Bytes)
+        $headersAuth = @{ "authorization" = "Basic $EncodedOAuth" }
+        $Authbody = 'grant_type=client_credentials'
+        Write-OGLogEntry "Retrieving Warranty authentication token from $($vendor) [AuthURI: $($AuthURI)]"
+        $AuthResult = Invoke-RESTMethod -Method Post -Uri $AuthURI -Body $AuthBody -Headers $HeadersAuth
+        Write-OGLogEntry "Success retrieving Warranty authentication token from $($vendor) [AuthURI: $($AuthURI)]"
+        $headersReq = @{ "Authorization" = "Bearer $($AuthResult.access_token)" }
+        $ReqBody = @{ servicetags = $serialNumber }
+        Write-OGLogEntry "Retrieving Warranty data from $($vendor) for machine [Serial: $($serialNumber)][APIUri: $($dellAPIUri)]"
+        $objResult = Invoke-RestMethod -Uri "$($dellAPIUri)" -Headers $headersReq -Body $ReqBody -Method Get -ContentType "application/json"
+        if ($objResult.entitlements.serviceleveldescription) {
+            Write-OGLogEntry "Success retrieving Warranty data from $($vendor) for machine [Serial: $($serialNumber)][APIUri: $($dellAPIUri)]"
+            $objWarranty = [System.Collections.IDictionary]@{
+                'serial'       = $serialNumber
+                'serviceLevel' = $objResult.entitlements.serviceleveldescription -join ", "
+                'startDate'    = ([datetime](($objResult.entitlements.startdate | sort-object -Descending | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
+                'endDate'      = ([datetime](($objResult.entitlements.enddate | sort-object | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
+                'vendor'       = "$($vendor)"
+                'client'       = $Client
+            }
+            return $objWarranty
+        }
+        else {
+            Write-OGLogEntry "Failed retrieving $($vendor) Warranty information for machine [Serial: $($serialNumber)][Result: $($objResult)]." -logtype Error
+            return $false
+        }
+    }
+    catch [System.Exception] {
+        Write-OGLogEntry "Failed retrieving $($vendor) Warranty information for machine [Serial: $($serialNumber)]. Error Message: $($_.Exception.Message)" -logtype Error
+        return $false
+    }     
+}
+
+
+<#
+.SYNOPSIS
+    Get Warranty data for a Lenovo machine
+
+.DESCRIPTION
+    Get Warranty data for a Lenovo machine and return it as a hash table
+
+.PARAMETER serialNumber
+    Serial number of machine
+
+.PARAMETER lenovoAPIKey
+    API Key provided by Lenovo Account Manager
+
+.PARAMETER IncudeBatteryExpiration
+    Not used currently.
+
+.PARAMETER Client
+    Org Name - Default SCCMOG
+
+.EXAMPLE
+    Get-OGLenovoWarranty -serialNumber $serialNumber -lenovoAPIKey $lenovoAPIKey
+    Returns the warranty data for the serial number provided as a hash table
+
+.EXAMPLE
+    Get-OGLenovoWarranty -serialNumber $serialNumber -lenovoAPIKey $lenovoAPIKey -Client "$($orgName)"
+    Returns the warranty data for the serial number provided as a hash table and also adds your Organisation name.
+
+.NOTES
+    Name:       Get-OGLenovoWarranty
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2022-05-19
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2022-05-19 Function Created
+#>
+Function Get-OGLenovoWarranty { 
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$serialNumber, 
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$lenovoAPIKey,
+        [Parameter(Mandatory = $false)]
+        [switch]$IncudeBatteryExpiration,
+        [Parameter(Mandatory = $false)]
+        [string]$Client = "SCCMOG"
+    ) 
+    $vendor = "Lenovo"
+    $lenovoAPIUri = "http://supportapi.$($vendor).com/V2.5/Warranty?Serial="
+    $headers = @{
+        'ClientId' = $lenovoAPIKey
+    };
+    Try {
+        Write-OGLogEntry "Retrieving Warranty data from $($vendor) for machine [Serial: $($serialNumber)][APIUri: $($lenovoAPIUri)$($SerialNumber)]"
+        $objResult = Invoke-RestMethod -Uri "$($lenovoAPIUri)$($SerialNumber)" -Headers $headers;
+        Write-OGLogEntry "Success retrieving $($vendor) Warranty information for machine [Serial: $($serialNumber)][APIUri: $($lenovoAPIUri)$($SerialNumber)]"
+        If ($IncudeBatteryExpiration) {
+            Write-OGLogEntry "Battey Warranty information requested also."
+            $objWarrantyResult = $objResult.Warranty | Where-Object { ($_.ID -like "1EZ*") -or ($_.ID -eq "36Y") -or ($_.ID -eq "3EZ") }
+        }
+        else {
+            $objWarrantyResult = $objResult.Warranty | Where-Object { ($_.ID -eq "36Y") -or ($_.ID -eq "3EZ") }    
+        }
+        if ($objWarrantyResult.Type) {
+            $objWarranty = [System.Collections.IDictionary]@{
+                'serial'       = $serialNumber
+                'serviceLevel' = $objWarrantyResult.Type
+                'startDate'    = ([datetime](($objWarrantyResult.Start | sort-object -Descending | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
+                'endDate'      = ([datetime](($objWarrantyResult.End  | sort-object | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
+                'vendor'       = "$($vendor)"
+                'client'       = $Client
+            }
+            return $objWarranty
+        }
+        else {
+            Write-OGLogEntry "Failed retrieving $($vendor) Warranty information for machine [Serial: $($serialNumber)][APIUri: $($lenovoAPIUri)$($SerialNumber)]. Error Message: $($_.Exception.Message)" -logtype Error
+            return $false
+        }
+        Write-OGLogEntry "Returning Warranty information..."
+        
+    }
+    catch [System.Exception] {
+        Write-OGLogEntry "Failed retrieving $($vendor) Warranty information for machine [Serial: $($serialNumber)][APIUri: $($lenovoAPIUri)$($SerialNumber)]. Error Message: $($_.Exception.Message)" -logtype Error
+        return $false
+    }     
+}
+
+
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
     "Get-OGRecursiveAADGroupMemberUsers",
-    "Get-OGHandleApp"
+    "Get-OGHandleApp",
+    "Get-OGDellWarranty",
+    "Get-OGLenovoWarranty"
 )
 
 foreach ($module in $Export){
