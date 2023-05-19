@@ -638,7 +638,8 @@ $Export = @(
     "New-OGWMINameSpace",
     "Remove-OGWMIClass",
     "Remove-OGWMINameSpace",
-    "Get-OGWMINameSpace"
+    "Get-OGWMINameSpace",
+    "Get-OGManufacturer"
 )
 
 foreach ($module in $Export){
