@@ -300,6 +300,35 @@ function Invoke-OGHWInventory {
     Invoke-WmiMethod -Namespace root\CCM -Class SMS_Client -Name TriggerSchedule -ArgumentList "{00000000-0000-0000-0000-000000000001}" | Out-Null
     Write-OGLogEntry -logText "Success invoking HW inventory."
 }
+
+function Invoke-OGConfigMgrBaselines { 
+$BaselineNames = "Clarivate - Zscaler Three","Clarivate - Zscaler Two"
+$BaselineNames = $null
+    param (
+        [Parameter(Mandatory = $false, Position = 0)] 
+        [String]$ComputerName = "$($ENV:COMPUTERNAME)",
+        [Parameter(Mandatory = $False, Position = 1)] 
+        [String[]]$BaselineNames
+    )
+    $objWMIBaselines = @()
+    If ((($BaselineNames|Measure-Object).Count) -eq 0) {
+        $objWMIBaselines = Get-WmiObject -ComputerName $ComputerName -Namespace root\ccm\dcm -Class SMS_DesiredConfiguration
+    }
+    Else {
+        foreach ($baselineName in $BaselineNames){
+            $objBaseline = $null
+            $objBaseline = Get-WmiObject -ComputerName $ComputerName -Namespace root\ccm\dcm -Class SMS_DesiredConfiguration | Where-Object { $_.DisplayName -like $baselineName }
+            if ($objBaseline){
+                $objWMIBaselines += $objBaseline
+            }
+        }
+    }
+    $objWMIBaselines | ForEach-Object {
+         ([wmiclass]"\\$ComputerName\root\ccm\dcm:SMS_DesiredConfiguration").TriggerEvaluation($_.Name, $_.Version) 
+    }
+}
+
+
 ##################################################################################################################################
 # End ConfigMgr Client  Region
 ##################################################################################################################################

@@ -496,6 +496,7 @@ function Get-OGHPWarranty {
                 'client'       = "$($Client)"
             }
             Write-OGLogEntry "[$($objWarranty.Keys.ForEach({"$_`: $($objWarranty.$_)"}) -join '][')]"
+            return $objWarranty
         }
         else {
             Write-OGLogEntry "Failed parsing Warranty data from retrived results. Did not find [offerProductIdentifier -eq HA152AW] or [offerDescription -like *HW Maintenance*] in Raw data" -logtype Error
