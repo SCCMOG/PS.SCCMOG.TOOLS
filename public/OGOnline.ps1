@@ -212,8 +212,9 @@ function Get-OGDellWarranty {
                 'startDate'    = ([datetime](($objResult.entitlements.startdate | sort-object -Descending | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
                 'endDate'      = ([datetime](($objResult.entitlements.enddate | sort-object | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
                 'vendor'       = "$($vendor)"
-                'client'       = $Client
+                'client'       = "$($Client)"
             }
+            Write-OGLogEntry "[$($objWarranty.Keys.ForEach({"$_`: $($objWarranty.$_)"}) -join '][')]"
             return $objWarranty
         }
         else {
@@ -304,8 +305,9 @@ Function Get-OGLenovoWarranty {
                 'startDate'    = ([datetime](($objWarrantyResult.Start | sort-object -Descending | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
                 'endDate'      = ([datetime](($objWarrantyResult.End  | sort-object | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
                 'vendor'       = "$($vendor)"
-                'client'       = $Client
+                'client'       = "$($Client)"
             }
+            Write-OGLogEntry "[$($objWarranty.Keys.ForEach({"$_`: $($objWarranty.$_)"}) -join '][')]"
             return $objWarranty
         }
         else {
@@ -321,13 +323,201 @@ Function Get-OGLenovoWarranty {
     }     
 }
 
+<#
+.SYNOPSIS
+    Get Warranty data for a HP machine
+
+.DESCRIPTION
+    Get Warranty data for a HP machine and return it as a hash table
+
+.PARAMETER serialNumber
+    Serial number of machine
+
+.PARAMETER HPAPIKey
+    API Key provided by HP Account Manager and https://developers.hp.com/hp-warranty-api
+
+.PARAMETER HPAPISecret
+    API Secret provided by HP Account Manager and https://developers.hp.com/hp-warranty-api
+
+.PARAMETER Client
+    Org Name - Default SCCMOG
+
+.EXAMPLE
+    Get-OGHPWarranty -serialNumber $serialNumber -HPAPIKey $HPAPIKey -HPAPISecret $HPAPISecret
+    Returns the warranty data for the serial number provided as a hash table
+
+.EXAMPLE
+    Get-OGHPWarranty -serialNumber $serialNumber -HPAPIKey $HPAPIKey -HPAPISecret $HPAPISecret -Client YourCompany
+    Returns the warranty data for the serial number provided as a hash table and also adds your Organisation name.
+
+.NOTES
+    Name:       Get-OGHPWarranty
+    Author:     Richie Schuster - SCCMOG.com
+    GitHub:     https://github.com/SCCMOG/PS.SCCMOG.TOOLS
+    Website:    https://www.sccmog.com
+    Contact:    @RichieJSY
+    Created:    2023-11-27
+    Updated:    -
+
+    Version history:
+    1.0.0 - 2023-11-27 Function Created
+#>
+function Get-OGHPWarranty {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        $serialNumber, 
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        $HPAPIKey,
+        [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        $HPAPISecret,
+        [Parameter(Mandatory = $false)]
+        $Client = "SCCMOG"
+    )
+    #region Constants
+    $vendor = "HP"
+    #credentials
+    $b64EncodedCred = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes("$($HPAPIKey):$($HPAPISecret)"))
+    #token retrieval
+    $tokenURI = "https://warranty.api.hp.com/oauth/v1/token"
+    $tokenHeaders = @{
+        accept        = "application/json"
+        authorization = "Basic $b64EncodedCred"
+    }
+    $tokenBody = "grant_type=client_credentials"
+    ##batch job
+    $queryURI = "https://warranty.api.hp.com/productwarranty/v2/jobs"
+    $queryHeaders = @{}
+    $queryHeaders["accept"] = "application/json"
+    $queryHeaders["Authorization"] = ""
+    $queryBody = "[{`"sn`":`"$($serialNumber)`"}]"
+
+    #region retrieve token
+    try {
+        Write-OGLogEntry "Attempting to retrieve HP access token"
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        $authkeyResponse = Invoke-WebRequest -UseBasicParsing -Method POST -Uri $tokenURI -Headers $tokenHeaders -Body $tokenBody -ContentType application/x-www-form-urlencoded
+        $authkey = ($authkeyResponse | ConvertFrom-Json | Select-Object -Property "access_token").access_token
+        $queryHeaders["Authorization"] = "Bearer $($authkey)"
+        Write-OGLogEntry "Success retrieve HP access token."
+    }
+    catch [System.Exception] {
+        Write-OGLogEntry "Failed retrieve HP access token. Error: $($_.Exception.Message)"
+        return $false
+    }
+    #endRegion retrieve token
+
+    #region Create batch job
+    try {
+        Write-OGLogEntry "Creating new batch job to retrieve warranty data. [serialNumer: $($serialNumber)][queryURI: $($queryURI)][queryBody: $($queryBody)]"
+        $queryResponse = Invoke-WebRequest -UseBasicParsing -Method POST -Uri $queryURI -Headers $queryHeaders -Body $queryBody -ContentType application/json
+        Write-OGLogEntry "Getting details of JOB from response."
+        $jobId = ($queryResponse | ConvertFrom-Json | Select-Object -Property "jobId").jobId
+        $estimatedTime = ($queryResponse | ConvertFrom-Json | Select-Object -Property "estimatedTime").estimatedTime
+        if (!($jobId)) {
+            Write-OGLogEntry "Failed creating Job. Exiting"
+            return $false
+        }
+        Write-OGLogEntry "Batch job created successfully [jobID: $($jobId)][estimatedTime: $($estimatedTime)s]"
+    }
+    catch {
+        Write-OGLogEntry "Failed creating Batch job. Error: $($_.Exception.Message)"
+        return $false
+    }
+    #endRegion Create batch job
+
+    #region Check status of Job
+    try { 
+        $JobStatusURI = $queryURI + "/" + $jobId
+        $JobResultsURI = $queryURI + "/" + $jobId + "/results"
+        Write-OGLogEntry "[JobStatusURI: $($JobStatusURI)]"
+        Write-OGLogEntry "[JobResultsURI: $($JobResultsURI)]"
+        Write-OGLogEntry "Waiting $($estimatedTime) seconds for job to complete."
+        Start-Sleep($estimatedTime)
+        Write-OGLogEntry "Checking if job has completed. [jobID: $($jobID)]"
+        $timeOutCount = 0
+        $maxTimeOutCount = 10
+        $jobCheckWait = 30
+        $JobStatus = Invoke-WebRequest -UseBasicParsing -Method GET -Uri $JobStatusURI -Headers $queryHeaders | ConvertFrom-Json
+        #Write-OGLogEntry "Starting while loop to intermittently check the status of the job."
+        while (($Jobstatus.status -eq "in progress") -and ($timeOutCount -ne $maxTimeOutCount)) {
+            Write-OGLogEntry "Job not complete. Estimated time in seconds to completion: $($JobStatus.estimatedTime)"
+            Write-OGLogEntry "Next job check in $($jobCheckWait) seconds. $($maxTimeOutCount - $count) checks remaining,...\n"
+            Start-Sleep $jobCheckWait
+            $JobStatus = Invoke-WebRequest -UseBasicParsing -Method GET -Uri $JobStatusURI -Headers $queryHeaders | ConvertFrom-Json
+            $timeOutCount++
+        }
+        if ($JobStatus.status -eq "completed") {
+            Write-OGLogEntry "Job status has been completed. [JobStatus: $($JobStatus.status)][JobStatusURI: $($JobStatusURI)]"
+        }
+        elseif ($timeOutCount -eq $maxTimeOutCount) {
+            Write-OGLogEntry "maxTimeOutCount has been reached. [maxTimeOutCount: $($maxTimeOutCount)]" -logtype Error
+            return $false
+        }
+        else {
+            Write-OGLogEntry "The Job has failed to complete. [Status: $JobStatus][jobID: $jobId]" -logtype Error
+            return $false
+        }
+    }
+    catch [System.Exception] {
+        Write-OGLogEntry "The Job has failed to complete. [jobID: $jobId]. Error: $($_.Exception.Message)" -logtype Error
+        return $false
+    }
+    #endRegion Check status of Job
+
+    #region Retrieve Job results
+    try {
+        Write-OGLogEntry "Attempting to retrieve Warranty Job results for machine [Serial: $($serialNumber)][JobStatusURI: $($JobResultsURI)]"
+        $JobResults = Invoke-WebRequest -UseBasicParsing -Method GET -Uri $JobResultsURI -Headers $queryHeaders
+        Write-OGLogEntry "Success retrieving Warranty Job results for machine [Serial: $($serialNumber)][JobStatusURI: $($JobResultsURI)]"
+    }
+    catch {
+        Write-OGLogEntry "Failed retrieving Warranty Job results for machine [Serial: $($serialNumber)][JobStatusURI: $($JobResultsURI)]. Error: $($_.Exception.Message)"  -logtype Error
+        return $false
+    }
+    #endRegion Retrieve Job results
+
+    #region Parse and return Job Results
+    try {
+        Write-OGLogEntry "Parsing Warranty data from retrived results. Raw data: $($JobResults.Content)"
+        $rawWarrantyResult = $JobResults.Content | ConvertFrom-Json
+        Write-OGLogEntry "Looking for [offerProductIdentifier -eq HA152AW] or [offerDescription -like *HW Maintenance*]"
+        $objRawHWWarranty = $rawWarrantyResult.offers | Where-Object { (($_.offerProductIdentifier -eq "HA152AW") -or ($_.offerDescription -like "*HW Maintenance*")) }
+        if ($objRawHWWarranty) {
+            Write-OGLogEntry "Success parsing Warranty data from $($vendor) for machine [Serial: $($serialNumber)]"  
+            $objWarranty = [System.Collections.IDictionary]@{
+                'serial'       = $serialNumber
+                'serviceLevel' = "$($objRawHWWarranty.offerDescription),offerProductIdentifier: $($objRawHWWarranty.offerProductIdentifier),serviceObligationIdentifier: $($objRawHWWarranty.serviceObligationIdentifier)"
+                'startDate'    = $($objRawHWWarranty.serviceObligationLineItemStartDate)
+                'endDate'      = $($objRawHWWarranty.serviceObligationLineItemEndDate)
+                'vendor'       = "$($vendor)"
+                'client'       = "$($Client)"
+            }
+            Write-OGLogEntry "[$($objWarranty.Keys.ForEach({"$_`: $($objWarranty.$_)"}) -join '][')]"
+        }
+        else {
+            Write-OGLogEntry "Failed parsing Warranty data from retrived results. Did not find [offerProductIdentifier -eq HA152AW] or [offerDescription -like *HW Maintenance*] in Raw data" -logtype Error
+            Write-OGLogEntry "Raw Data: $($JobResults.Content)"
+            return $false
+        }
+    }
+    catch [System.Exception] {
+        Write-OGLogEntry "Failed parsing Warranty data from retrived results. Error: $($_.Exception.Message)" -logtype Error
+        return $false
+    }
+    #endRegion Parse and return Job Results
+}
+
 
 #Get-ChildItem function: | Where-Object { ($currentFunctions -notcontains $_)-and($_.Name -like "*-OG*") } | Select-Object -ExpandProperty name
 $Export = @(
     "Get-OGRecursiveAADGroupMemberUsers",
     "Get-OGHandleApp",
     "Get-OGDellWarranty",
-    "Get-OGLenovoWarranty"
+    "Get-OGLenovoWarranty",
+    "Get-OGHPWarranty"
 )
 
 foreach ($module in $Export){
