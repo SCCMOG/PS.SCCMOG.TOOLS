@@ -172,11 +172,12 @@ function Write-OGRegFileContent {
     Website:    https://www.sccmog.com
     Contact:    @RichieJSY
     Created:    2021-08-17
-    Updated:    -
+    Updated:    2024-04-08
 
     Version history:
     1.0.0 - 2021-08-17 Function created
     1.1.0 - 2022-10-26 Added Architecture
+    1.1.1 - 2024-04-08 Update Logging
 #>
 function Get-OGProductUninstallKey {
     [cmdletbinding()]            
@@ -199,13 +200,13 @@ function Get-OGProductUninstallKey {
         $OSArch = (Get-WMIObject -ClassName Win32_OperatingSystem -ComputerName $MachineName).OSArchitecture
     }
     catch [System.Exception] {
-        Write-CMTLog -Value "Error when getting OS Arch from $($MachineName). Error: $($_.Exception.Message)"
+       Write-OGLogEntry "Error when getting OS Arch from $($MachineName). Error: $($_.Exception.Message)" -logType Error
     }
     try {
         $Reg = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey('LocalMachine', $MachineName)
     }
     catch [System.Exception] {
-        Write-CMTLog -Value "Error opening remote registry for machine: $($MachineName). Error: $($_.Exception.Message)"
+       Write-OGLogEntry "Error opening remote registry for machine: $($MachineName). Error: $($_.Exception.Message)" -logType Error
     }
     switch ($OSArch) {
         "64-bit" { 
@@ -254,7 +255,7 @@ function Get-OGProductUninstallKey {
             Write-OGLogEntry -logText "Products found:"
             Write-OGLogEntry -logText "-------------"
             foreach ($product in $RetrievedProducts) {
-                $Product.psobject.properties | ForEach-Object { Write-CMTLog -Value "$($_.Name):   $($_.Value)" }
+                $Product.psobject.properties | ForEach-Object {Write-OGLogEntry "$($_.Name):   $($_.Value)" }
                 Write-OGLogEntry -logText "-------------"
             }
         } 
