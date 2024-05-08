@@ -212,6 +212,7 @@ function Get-OGProductUninstallKey {
             $UninstallRegKeys = @('SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
                 'SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\\Uninstall'
             )
+	}
         else {
             $UninstallRegKeys = @('SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall')
         }
