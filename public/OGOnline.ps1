@@ -149,7 +149,11 @@ function Get-OGHandleApp{
     Dell client ID provided by Dell 
 
 .PARAMETER DellAPIKey
-    Dell API Key provided by Dell 
+    Dell API Key provided by Dell
+
+.PARAMETER warrantyPeriod
+    Dell Warranty period in years if only Ship date is listed when Dell API Queried.
+    Default 4
 
 .PARAMETER Client
     Org Name - Default SCCMOG
@@ -173,6 +177,7 @@ function Get-OGHandleApp{
 
     Version history:
     1.0.0 - 2022-05-19 Function Created
+    1.1.0 - 2024-05-24 Added warranty period for devices that only list ship date in Dell DB
 #>
 function Get-OGDellWarranty {
     param(
@@ -185,6 +190,8 @@ function Get-OGDellWarranty {
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
         $DellAPIKey,
+        [Parameter(Mandatory = $false)]
+        $warrantyPeriod = 4,
         [Parameter(Mandatory = $false)]
         $Client = "SCCMOG"
     )
@@ -211,6 +218,19 @@ function Get-OGDellWarranty {
                 'serviceLevel' = $objResult.entitlements.serviceleveldescription -join ", "
                 'startDate'    = ([datetime](($objResult.entitlements.startdate | sort-object -Descending | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
                 'endDate'      = ([datetime](($objResult.entitlements.enddate | sort-object | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
+                'vendor'       = "$($vendor)"
+                'client'       = "$($Client)"
+            }
+            Write-OGLogEntry "[$($objWarranty.Keys.ForEach({"$_`: $($objWarranty.$_)"}) -join '][')]"
+            return $objWarranty
+        }
+        elseif ($objResult.shipDate) {
+            Write-OGLogEntry "Success retrieving Warranty data from $($vendor) for machine [Serial: $($serialNumber)][APIUri: $($dellAPIUri)]"
+            $objWarranty = [System.Collections.IDictionary]@{
+                'serial'       = $serialNumber
+                'serviceLevel' = $objResult.countryCode
+                'startDate'    = ([datetime](($objResult.shipDate | sort-object -Descending | select-object -last 1) -split 'T')[0]).ToString("yyyy-MM-dd")
+                'endDate'      = ([datetime](($objResult.shipDate | sort-object -Descending | select-object -last 1) -split 'T')[0]).AddYears($warrantyPeriod).ToString("yyyy-MM-dd")
                 'vendor'       = "$($vendor)"
                 'client'       = "$($Client)"
             }
