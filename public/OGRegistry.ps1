@@ -208,15 +208,13 @@ function Get-OGProductUninstallKey {
     catch [System.Exception] {
        Write-OGLogEntry "Error opening remote registry for machine: $($MachineName). Error: $($_.Exception.Message)" -logType Error
     }
-    switch ($OSArch) {
-        "64-bit" { 
-            $UninstallRegKeys = @('SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
-                'SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\\Uninstall'
-            )
-        }
-        Default {
-            $UninstallRegKeys = @('SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall')
-        }
+    if ($OSArch -Like "*64*") {
+        $UninstallRegKeys = @('SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+            'SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\\Uninstall'
+        )
+    }
+    else {
+        $UninstallRegKeys = @('SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall')
     }
     foreach ($uninstkey in $UninstallRegKeys) {
         $RegKey = $Reg.OpenSubKey("$uninstkey")
