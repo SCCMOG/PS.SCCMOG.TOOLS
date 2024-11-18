@@ -85,6 +85,7 @@ Sets full control to the Builtin Users Group to HKLM:\Software\SCCMOG recursive
     Version history:
     1.0.0 - 2022-02-09 Function created
     1.1.0 - 2022-02-09 Added RegistryAccessRule or FileSystemAccessRule switch.
+    1.1.1 - 2024-11-18 Added check for path type. Added Logging.
 #>
 function Set-OGFullControlUsers {
     [CmdletBinding()]
@@ -97,6 +98,7 @@ function Set-OGFullControlUsers {
         [ValidateNotNullOrEmpty()]
         [string]$Type
     )
+    Write-OGLogEntry "Attempting to set full control for [Type: $($Type)] [Path: $($Path)]"
     if (!(checkAdminRights)){
         $eM = "User or process not running as Local Administrator"
         Write-OGLogEntry $eM -logtype Error

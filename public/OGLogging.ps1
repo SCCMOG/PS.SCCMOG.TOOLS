@@ -230,6 +230,7 @@ If used will append to a current log file if one is foun dthe new location.
 
         Version history:
             1.0.0 - 2022-01-24 Function created
+            1.0.1 - 2024-11-18 Added type switch to new-item to create directory if not found.
 #>
 function Set-OGLogEntryRootPath (){
     [cmdletbinding()]
@@ -246,7 +247,7 @@ function Set-OGLogEntryRootPath (){
             break
         }
         else{
-            New-Item -Path "$($Path)" -Force
+            New-Item -Path "$($Path)" -ItemType Directory -Force
             Write-Verbose "Created: '$($Path)' "
         }
     }
